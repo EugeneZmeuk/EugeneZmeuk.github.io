@@ -14,7 +14,7 @@ const config = {
   },
 
   url: 'https://eugenezmeuk.github.io',
-  baseUrl: '/kizevich.github.io/',
+  baseUrl: '/kizevich/',
 
   organizationName: 'EugeneZmeuk',
   projectName: 'kizevich.github.io',
