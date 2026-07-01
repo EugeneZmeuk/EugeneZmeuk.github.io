@@ -17,7 +17,7 @@ const config = {
   baseUrl: '/kizevich/',
 
   organizationName: 'EugeneZmeuk',
-  projectName: 'kizevich.github.io',
+  projectName: 'kizevich',
   deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'throw',
