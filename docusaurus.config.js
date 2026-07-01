@@ -15,13 +15,19 @@ const config = {
 
   url: 'https://eugenezmeuk.github.io',
   baseUrl: '/kizevich/',
+  trailingSlash: true,
 
   organizationName: 'EugeneZmeuk',
   projectName: 'kizevich',
   deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   i18n: {
     defaultLocale: 'en',
@@ -141,7 +147,7 @@ const config = {
               },
               {
                 label: 'Repository',
-                href: 'https://github.com/EugeneZmeuk/kizevich.github.io',
+                href: 'https://github.com/EugeneZmeuk/kizevich',
               },
             ],
           },
