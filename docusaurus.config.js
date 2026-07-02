@@ -62,6 +62,8 @@ const config = {
         logo: {
           alt: 'Eugene Kizevich',
           src: 'img/eugene-avatar.png',
+          href: 'https://github.com/EugeneZmeuk',
+          target: '_blank',
         },
         items: [
           {
@@ -100,10 +102,10 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://github.com/EugeneZmeuk',
-            label: 'My GitHub',
-            position: 'right',
-          },
+          href: 'https://github.com/EugeneZmeuk',
+          label: 'My GitHub',
+          position: 'right',
+        },
           {
             href: 'https://www.linkedin.com/in/eugene-kizevich-0a5b3914b/',
             label: 'LinkedIn',
