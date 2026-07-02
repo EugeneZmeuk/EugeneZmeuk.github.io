@@ -73,6 +73,195 @@
   }
 </style>
 <!-- tool-source-attribution:style-end -->
+  <script>
+    // Sync this static tool page with the Docusaurus site theme.
+    function getSavedSiteTheme() {
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || savedTheme === 'light') {
+          return savedTheme;
+        }
+      } catch (e) {}
+
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+
+      return 'light';
+    }
+
+    function applySiteTheme() {
+      const theme = getSavedSiteTheme();
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+
+      if (document.body) {
+        document.body.classList.toggle('dark', theme === 'dark');
+      }
+    }
+
+    applySiteTheme();
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'theme') {
+        applySiteTheme();
+      }
+    });
+
+    (function () {
+      function getSiteTheme() {
+        try {
+          var savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'dark' || savedTheme === 'light') {
+            return savedTheme;
+          }
+        } catch (e) {}
+
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+
+        return 'light';
+      }
+
+      var theme = getSiteTheme();
+      document.documentElement.setAttribute('data-theme', theme);
+
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <style id="tool-theme-style">
+    :root {
+      color-scheme: light;
+      --tool-bg: #f6f7fb;
+      --tool-card: #ffffff;
+      --tool-card-soft: #f9fafb;
+      --tool-text: #111827;
+      --tool-muted: #6b7280;
+      --tool-border: #d1d5db;
+      --tool-accent: #2563eb;
+      --tool-accent-hover: #1d4ed8;
+      --tool-good: #0f7a2a;
+      --tool-good-border: #22c55e;
+      --tool-bad: #b91c1c;
+      --tool-bad-border: #ef4444;
+      --tool-info: #1d4ed8;
+      --tool-info-border: #3b82f6;
+      --tool-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+    }
+
+    html[data-theme='dark'] {
+      color-scheme: dark;
+      --tool-bg: #0f172a;
+      --tool-card: #111827;
+      --tool-card-soft: #1e293b;
+      --tool-text: #e5e7eb;
+      --tool-muted: #94a3b8;
+      --tool-border: #334155;
+      --tool-accent: #60a5fa;
+      --tool-accent-hover: #93c5fd;
+      --tool-good: #86efac;
+      --tool-good-border: #22c55e;
+      --tool-bad: #fca5a5;
+      --tool-bad-border: #ef4444;
+      --tool-info: #93c5fd;
+      --tool-info-border: #3b82f6;
+      --tool-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+    }
+
+    html[data-theme='dark'] body {
+      background: var(--tool-bg) !important;
+      color: var(--tool-text) !important;
+    }
+
+    html[data-theme='dark'] .page,
+    html[data-theme='dark'] .app {
+      background: var(--tool-bg) !important;
+      color: var(--tool-text) !important;
+    }
+
+    html[data-theme='dark'] .panel,
+    html[data-theme='dark'] .card,
+    html[data-theme='dark'] .tool-card,
+    html[data-theme='dark'] .converter,
+    html[data-theme='dark'] .drop-zone,
+    html[data-theme='dark'] .tool-source-attribution {
+      background: var(--tool-card) !important;
+      color: var(--tool-text) !important;
+      border-color: var(--tool-border) !important;
+      box-shadow: var(--tool-shadow) !important;
+    }
+
+    html[data-theme='dark'] h1,
+    html[data-theme='dark'] h2,
+    html[data-theme='dark'] h3,
+    html[data-theme='dark'] strong,
+    html[data-theme='dark'] label,
+    html[data-theme='dark'] .title {
+      color: var(--tool-text) !important;
+    }
+
+    html[data-theme='dark'] p,
+    html[data-theme='dark'] li,
+    html[data-theme='dark'] .label,
+    html[data-theme='dark'] .hint,
+    html[data-theme='dark'] .description,
+    html[data-theme='dark'] .muted {
+      color: var(--tool-muted) !important;
+    }
+
+    html[data-theme='dark'] input,
+    html[data-theme='dark'] textarea,
+    html[data-theme='dark'] select {
+      background: #0b1220 !important;
+      color: var(--tool-text) !important;
+      border-color: var(--tool-border) !important;
+    }
+
+    html[data-theme='dark'] input::placeholder,
+    html[data-theme='dark'] textarea::placeholder {
+      color: #64748b !important;
+    }
+
+    html[data-theme='dark'] button,
+    html[data-theme='dark'] .button,
+    html[data-theme='dark'] .primary {
+      background: var(--tool-accent) !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme='dark'] button:hover,
+    html[data-theme='dark'] .button:hover,
+    html[data-theme='dark'] .primary:hover {
+      background: var(--tool-accent-hover) !important;
+    }
+
+    html[data-theme='dark'] a {
+      color: var(--tool-accent) !important;
+    }
+
+    html[data-theme='dark'] textarea.good,
+    html[data-theme='dark'] .good {
+      color: var(--tool-good) !important;
+      border-color: var(--tool-good-border) !important;
+    }
+
+    html[data-theme='dark'] textarea.bad,
+    html[data-theme='dark'] .bad {
+      color: var(--tool-bad) !important;
+      border-color: var(--tool-bad-border) !important;
+    }
+
+    html[data-theme='dark'] textarea.info,
+    html[data-theme='dark'] .info {
+      color: var(--tool-info) !important;
+      border-color: var(--tool-info-border) !important;
+    }
+  </style>
+
 </head>
 <body>
   <main class="page">
@@ -128,37 +317,7 @@
 </main>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
-
-    // Use the same theme as the main Docusaurus site.
-    function getSavedTheme() {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark' || savedTheme === 'light') {
-        return savedTheme;
-      }
-
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-
-      return 'light';
-    }
-
-    function applyThemeFromSite() {
-      const theme = getSavedTheme();
-      document.body.classList.toggle('dark', theme === 'dark');
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-
-    applyThemeFromSite();
-
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'theme') {
-        applyThemeFromSite();
-      }
-    });
-
-
-    const NS = { osmand: 'https://osmand.net' };
+const NS = { osmand: 'https://osmand.net' };
     const $ = (id) => document.getElementById(id);
     const esc = (s='') => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const cleanFileName = (s='item') => String(s).trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').slice(0,90) || 'item';
