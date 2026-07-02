@@ -60,11 +60,26 @@ const config = {
       navbar: {
         title: 'Eugene Kizevich',
         logo: {
-          alt: 'OsmAnd Logo',
-          src: 'img/osmand_logo.png',
+          alt: 'Eugene Kizevich',
+          src: 'img/eugene-avatar.png',
         },
         items: [
           {
+            type: 'dropdown',
+            label: 'Tools',
+            position: 'left',
+            items: [
+              {
+                to: '/#osmand-links',
+                label: 'OsmAnd Links',
+              },
+              {
+                to: '/#my-osmand-tools',
+                label: 'My OsmAnd Tools',
+              },
+            ],
+          },
+{
             href: 'https://osmand.net/',
             label: 'OsmAnd',
             position: 'right',

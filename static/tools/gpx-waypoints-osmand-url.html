@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>GPX Waypoints to OsmAnd URL</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --card-soft:#f8fafc;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#d1d5db;
+      --accent:#2563eb;
+      --accent-soft:#dbeafe;
+      --good:#0f7a2a;
+      --good-border:#22c55e;
+      --bad:#b91c1c;
+      --bad-border:#ef4444;
+      --info:#1d4ed8;
+      --info-border:#3b82f6;
+      --shadow:0 12px 34px rgba(15,23,42,.08);
+      --radius:20px;
+    }
+
+    body.dark{
+      --bg:#0f172a;
+      --card:#111827;
+      --card-soft:#0b1220;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --border:#334155;
+      --accent:#60a5fa;
+      --accent-soft:#172554;
+      --shadow:0 12px 34px rgba(0,0,0,.28);
+    }
+
+    *{box-sizing:border-box}
+
+    html{scroll-behavior:smooth}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,.12), transparent 32rem),
+        var(--bg);
+      color:var(--text);
+      line-height:1.5;
+    }
+
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .page{
+      width:min(100%,1120px);
+      margin:0 auto;
+      padding:24px 16px 42px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:28px;
+    }
+
+    .back-link{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:var(--muted);
+      font-size:14px;
+      font-weight:600;
+    }
+
+    .hero{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:clamp(22px,4vw,42px);
+      margin-bottom:22px;
+    }
+
+    .eyebrow{
+      color:var(--accent);
+      font-size:14px;
+      font-weight:700;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      margin:0 0 8px;
+    }
+
+    h1{
+      margin:0 0 12px;
+      font-size:clamp(30px,5vw,52px);
+      line-height:1.05;
+      letter-spacing:-.035em;
+    }
+
+    .lead{
+      max-width:760px;
+      color:var(--muted);
+      font-size:clamp(17px,2vw,20px);
+      margin:0;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(360px,440px);
+      gap:22px;
+      align-items:start;
+    }
+
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .info-card,
+    .tool-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+
+    .info-card{
+      padding:18px;
+    }
+
+    .info-card h2,
+    .tool-card h2{
+      margin:0 0 10px;
+      font-size:20px;
+      letter-spacing:-.02em;
+    }
+
+    .info-card p,
+    .info-card ul{
+      color:var(--muted);
+      margin:0;
+      padding-left:0;
+    }
+
+    .info-card ul{
+      list-style:none;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .info-card li::before{
+      content:"✓";
+      color:var(--good);
+      font-weight:800;
+      margin-right:8px;
+    }
+
+    .wide{grid-column:1/-1}
+
+    .tool-card{
+      padding:18px;
+      position:sticky;
+      top:16px;
+    }
+
+    .tool-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .tool-header p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .switch{
+      position:relative;
+      width:44px;
+      height:26px;
+      flex:0 0 auto;
+    }
+
+    .switch input{display:none}
+
+    .slider{
+      position:absolute;
+      inset:0;
+      border-radius:999px;
+      background:#cbd5e1;
+      transition:.2s;
+    }
+
+    .slider:before{
+      content:"";
+      position:absolute;
+      width:20px;
+      height:20px;
+      left:3px;
+      top:3px;
+      border-radius:50%;
+      background:#fff;
+      transition:.2s;
+      box-shadow:0 2px 8px rgba(0,0,0,.2);
+    }
+
+    .switch input:checked + .slider{background:#334155}
+    .switch input:checked + .slider:before{transform:translateX(18px)}
+
+    .form-group{margin-bottom:14px}
+
+    .label{
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:650;
+    }
+
+    select,
+    button,
+    textarea,
+    input[type="text"]{
+      width:100%;
+      font:inherit;
+      border-radius:14px;
+      outline:none;
+    }
+
+    select{
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--text);
+      padding:11px 12px;
+      font-size:14px;
+    }
+
+    button{
+      background:var(--accent);
+      color:white;
+      border:none;
+      font-weight:700;
+      cursor:pointer;
+      padding:12px 14px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+
+    button:hover:not(:disabled){transform:translateY(-1px)}
+    button:active:not(:disabled){transform:translateY(0)}
+
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .drop-zone{
+      border:2px dashed var(--border);
+      background:var(--card-soft);
+      border-radius:18px;
+      padding:20px;
+      text-align:center;
+      transition:border-color .15s ease, background .15s ease, transform .15s ease;
+      cursor:pointer;
+    }
+
+    .drop-zone:hover,
+    .drop-zone:focus,
+    .drop-zone.is-dragover{
+      border-color:var(--accent);
+      background:var(--accent-soft);
+    }
+
+    .drop-zone.is-dragover{transform:scale(1.01)}
+
+    .drop-icon{
+      width:44px;
+      height:44px;
+      display:grid;
+      place-items:center;
+      margin:0 auto 10px;
+      border-radius:14px;
+      background:var(--card);
+      border:1px solid var(--border);
+      font-size:22px;
+    }
+
+    .drop-title{
+      margin:0;
+      font-weight:800;
+      font-size:15px;
+    }
+
+    .drop-subtitle{
+      margin:4px 0 12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .file-name{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:12px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    textarea{
+      min-height:104px;
+      resize:vertical;
+      overflow:auto;
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.4;
+      font-size:14px;
+      padding:11px 12px;
+      background:rgba(255,255,255,.02);
+      -webkit-user-select:text;
+      user-select:text;
+    }
+
+    textarea.good{
+      color:var(--good);
+      border:1px solid var(--good-border);
+      box-shadow:inset 0 0 0 1px rgba(34,197,94,.12);
+    }
+
+    textarea.bad{
+      color:var(--bad);
+      border:1px solid var(--bad-border);
+      box-shadow:inset 0 0 0 1px rgba(239,68,68,.12);
+    }
+
+    textarea.info{
+      color:var(--info);
+      border:1px solid var(--info-border);
+      box-shadow:inset 0 0 0 1px rgba(59,130,246,.12);
+    }
+
+    input[type="text"]{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      padding:11px 12px;
+      font-size:13px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .secondary{
+      background:transparent;
+      color:var(--accent);
+      border:1px solid var(--border);
+    }
+
+    .note{
+      margin:12px 0 0;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    @media (max-width:900px){
+      .layout{grid-template-columns:1fr}
+      .tool-card{position:static}
+    }
+
+    @media (max-width:640px){
+      .topbar{align-items:flex-start;flex-direction:column}
+      .hero{padding:22px}
+      .info-grid{grid-template-columns:1fr}
+      .actions{flex-direction:column}
+      .toggle{align-self:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <a class="back-link" href="/kizevich/" aria-label="Back to Eugene Kizevich home page">← Back to Eugene Kizevich</a>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">OsmAnd helper tool</p>
+      <h1>GPX Waypoints to OsmAnd URL</h1>
+      <p class="lead">
+        Convert GPX waypoints or route points into an OsmAnd Web Map route link.
+        Upload a file, choose a routing profile, and open the generated route directly in the browser.
+      </p>
+    </section>
+
+    <main class="layout">
+      <section class="info-grid" aria-label="Tool description">
+        <article class="info-card">
+          <h2>What it does</h2>
+          <p>
+            The tool reads route points from a GPX file and builds an OsmAnd Web Map URL with a start point,
+            optional via points, an end point, and the selected routing profile.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h2>Supported data</h2>
+          <ul>
+            <li>GPX files with at least two <code>wpt</code> points</li>
+            <li>GPX files with <code>rtept</code> route points</li>
+            <li>Car, bicycle, pedestrian, and motorcycle profiles</li>
+          </ul>
+        </article>
+
+        <article class="info-card wide">
+          <h2>How to use</h2>
+          <ul>
+            <li>Drag and drop a GPX file into the upload area, or choose it manually.</li>
+            <li>Select the routing profile you want to use in OsmAnd Web Map.</li>
+            <li>Open the generated link to check the route on <a href="https://osmand.net/map" target="_blank" rel="noopener noreferrer">OsmAnd Web Map</a>.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="tool-card" aria-label="GPX to OsmAnd URL tool">
+        <div class="tool-header">
+          <div>
+            <h2>Generate route link</h2>
+            <p>Drop a GPX file here or select it from your device.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="profile">Routing profile</label>
+          <select id="profile">
+            <option value="car" selected>Car</option>
+            <option value="bicycle">Bicycle</option>
+            <option value="pedestrian">Pedestrian</option>
+            <option value="motorcycle">Motorcycle</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="Upload GPX file by clicking or dragging and dropping">
+            <div class="drop-icon" aria-hidden="true">⌁</div>
+            <p class="drop-title">Drop GPX file here</p>
+            <p class="drop-subtitle">or choose a file from your device</p>
+            <button id="loadBtn" type="button">Choose GPX file</button>
+            <p id="fileName" class="file-name">No file selected</p>
+          </div>
+          <input id="fileInput" type="file" accept=".gpx,application/gpx+xml,text/xml,application/xml,.xml" hidden />
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="output">Processing status</label>
+          <textarea id="output" readonly class="info">Load or drop a GPX file to generate an OsmAnd Web Map link.</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="urlOutput">Generated link</label>
+          <input id="urlOutput" type="text" readonly placeholder="The link will appear after loading a file" />
+        </div>
+
+        <div class="actions">
+          <button id="openBtn" type="button" disabled>Open in OsmAnd Web Map</button>
+          <button id="copyBtn" class="secondary" type="button" disabled>Copy link</button>
+        </div>
+
+        <p class="note">
+          Note: GPX files with only track geometry (<code>trkpt</code>) do not contain route waypoints for this converter.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const body = document.body;
+
+    // Use the same theme as the main Docusaurus site.
+    function getSavedTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+      }
+
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+
+      return 'light';
+    }
+
+    function applyThemeFromSite() {
+      const theme = getSavedTheme();
+      document.body.classList.toggle('dark', theme === 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    applyThemeFromSite();
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'theme') {
+        applyThemeFromSite();
+      }
+    });
+
+const loadBtn = document.getElementById('loadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+    const profileSel = document.getElementById('profile');
+    const output = document.getElementById('output');
+    const urlOutput = document.getElementById('urlOutput');
+    const openBtn = document.getElementById('openBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    let currentUrl = '';
+    let lastCoords = [];
+loadBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openFilePicker();
+    });
+
+    dropZone.addEventListener('click', openFilePicker);
+    dropZone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openFilePicker();
+      }
+    });
+
+    fileInput.addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      await processFile(file);
+      fileInput.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.add('is-dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropZone.classList.remove('is-dragover');
+      });
+    });
+
+    document.addEventListener('dragover', (event) => event.preventDefault());
+    document.addEventListener('drop', (event) => event.preventDefault());
+
+    dropZone.addEventListener('drop', async (event) => {
+      const files = event.dataTransfer && event.dataTransfer.files;
+      if (!files || files.length === 0) return;
+
+      if (files.length > 1) {
+        setStatus('info', 'Several files were dropped. Only the first file will be processed.');
+      }
+
+      await processFile(files[0]);
+    });
+
+    profileSel.addEventListener('change', () => {
+      if (lastCoords.length < 2) return;
+      setGeneratedUrl(buildOsmAndUrl(lastCoords));
+      setStatus('good', `Routing profile updated.\nPoints used: ${lastCoords.length}.\nClick “Open in OsmAnd Web Map” to view the route.`);
+    });
+
+    openBtn.addEventListener('click', () => {
+      if (!currentUrl) {
+        setStatus('info', 'Load a valid GPX file first to generate an OsmAnd Web Map link.');
+        return;
+      }
+
+      const openedWindow = window.open(currentUrl, '_blank', 'noopener,noreferrer');
+
+      if (!openedWindow) {
+        setStatus('info', 'The browser blocked opening a new tab. Copy the generated link and open it manually.');
+      }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      if (!currentUrl) return;
+
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        setStatus('good', 'The generated link has been copied to the clipboard.');
+      } catch (error) {
+        urlOutput.focus();
+        urlOutput.select();
+        setStatus('info', 'Copying is not available in this browser. The link field is selected, so you can copy it manually.');
+      }
+    });
+  </script>
+</body>
+</html>

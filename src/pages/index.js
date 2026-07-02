@@ -100,7 +100,14 @@ function Card({title, children}) {
 }
 
 export default function Home() {
-  const logoUrl = useBaseUrl('/img/osmand_logo.png');
+  const logoLightUrl = useBaseUrl('/img/logo_osmand_black.svg');
+  const logoDarkUrl = useBaseUrl('/img/logo_osmand_white.svg');
+
+  const gpxToolUrl = useBaseUrl('/tools/gpx-waypoints-osmand-url.html');
+  const osmandGpxToKmlUrl = useBaseUrl('/tools/osmand-gpx-to-kml.html');
+  const googleMapToOsmandGpxUrl = useBaseUrl('/tools/google-map-to-osmand-gpx.html');
+  const kmlToOsmandGpxUrl = useBaseUrl('/tools/kml-to-osmand-gpx.html');
+  const gmapIconsToOsmandUrl = useBaseUrl('/tools/gmap-icons-to-osmand.html');
 
   return (
     <Layout
@@ -110,11 +117,19 @@ export default function Home() {
       <main>
         <section className={styles.hero}>
           <div className={styles.heroInner}>
+            <div className={styles.heroLogoWrap}>
             <img
-              className={styles.heroLogo}
-              src={logoUrl}
-              alt="OsmAnd logo"
+              className={`${styles.heroLogo} ${styles.heroLogoLight}`}
+              src={logoLightUrl}
+              alt="OsmAnd"
             />
+            <img
+              className={`${styles.heroLogo} ${styles.heroLogoDark}`}
+              src={logoDarkUrl}
+              alt=""
+              aria-hidden="true"
+            />
+          </div>
 
             <p className={styles.eyebrow}>OsmAnd · Marketing · Community · Documentation</p>
 
@@ -265,7 +280,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.section} id="osmand-links">
           <div className={styles.container}>
             <Heading as="h2">Useful OsmAnd links</Heading>
 
@@ -286,7 +301,58 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={styles.sectionAlt}>
+        
+      <section className={styles.sectionAlt} id="my-osmand-tools">
+        <div className={styles.container}>
+          <Heading as="h2">My OsmAnd tools</Heading>
+          <p>
+            Small helper tools I use for OsmAnd-related testing, support,
+            documentation, and product workflows.
+          </p>
+          <div className={styles.linkGrid}>
+
+            <Link className={styles.linkCard} to={osmandGpxToKmlUrl}>
+              <strong>OsmAnd GPX to KML Converter</strong>
+              <span>
+                Convert OsmAnd GPX waypoints into a KML file for Google My
+                Maps, with similar icon styles and colors where possible.
+              </span>
+            </Link>
+            <Link className={styles.linkCard} to={gpxToolUrl}>
+              <strong>GPX Waypoints to OsmAnd URL</strong>
+              <span>
+                Upload a GPX file with waypoints or route points, choose a
+                routing profile, and open the generated route directly in
+                OsmAnd Web Map.
+              </span>
+            </Link>
+            <Link className={styles.linkCard} to={googleMapToOsmandGpxUrl}>
+              <strong>Google Map to OsmAnd GPX Package</strong>
+              <span>
+                Create a ZIP package of OsmAnd-style GPX files from a Google
+                My Maps KML or KMZ export, with tracks, waypoints, and layers.
+              </span>
+            </Link>
+            <Link className={styles.linkCard} to={kmlToOsmandGpxUrl}>
+              <strong>KML to OsmAnd GPX Converter</strong>
+              <span>
+                Convert a Google My Maps KML or KMZ export into a single
+                OsmAnd-style GPX file with tracks, waypoints, colors, and icons.
+              </span>
+            </Link>
+            <Link className={styles.linkCard} to={gmapIconsToOsmandUrl}>
+              <strong>Google Maps Icons to OsmAnd GPX</strong>
+              <span>
+                Convert Google My Maps placemarks into OsmAnd GPX waypoints
+                with similar OsmAnd icons where possible.
+              </span>
+            </Link>
+
+          </div>
+        </div>
+      </section>
+
+<section className={styles.sectionAlt}>
           <div className={styles.container}>
             <Heading as="h2">Current focus</Heading>
 

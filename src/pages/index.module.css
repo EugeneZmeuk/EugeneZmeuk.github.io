@@ -216,3 +216,29 @@
     height: 26px;
   }
 }
+/* Theme-aware OsmAnd logo in the hero section */
+.heroLogoWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.heroLogo {
+  width: auto;
+  height: 96px;
+  max-width: min(320px, 80vw);
+  object-fit: contain;
+}
+
+.heroLogoDark {
+  display: none;
+}
+
+:global(html[data-theme='dark']) .heroLogoLight {
+  display: none;
+}
+
+:global(html[data-theme='dark']) .heroLogoDark {
+  display: block;
+}

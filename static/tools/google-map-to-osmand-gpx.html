@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Google Map to OsmAnd GPX Package</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --text:#111827; --muted:#6b7280; --border:#d1d5db;
+      --accent:#2563eb; --accent-dark:#1d4ed8; --good:#0f7a2a; --bad:#b91c1c; --info:#1d4ed8;
+      --soft:#eff6ff; --shadow:0 14px 40px rgba(15,23,42,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text)}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+    .page{max-width:1040px;margin:0 auto;padding:32px 18px 48px}
+    .hero{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+    .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:10px}
+    h1{font-size:clamp(30px,5vw,46px);line-height:1.04;margin:0 0 14px}
+    h2{font-size:24px;margin:0 0 12px}.lead{font-size:18px;line-height:1.55;color:#374151;max-width:850px;margin:0}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+    .steps{margin:0;padding-left:20px;color:#374151;line-height:1.6}.note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:14px;padding:12px 14px;line-height:1.45;margin-top:14px;font-size:14px}
+    .drop{border:2px dashed #93c5fd;background:var(--soft);border-radius:18px;padding:26px;text-align:center;transition:.15s;cursor:pointer}.drop.drag{background:#dbeafe;border-color:var(--accent)}
+    .drop strong{display:block;font-size:18px;margin-bottom:6px}.drop span{display:block;color:var(--muted);font-size:14px}
+    .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.full{grid-column:1 / -1}
+    label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px}input,select,button,textarea{width:100%;font:inherit;border-radius:12px}input,select,textarea{border:1px solid var(--border);background:white;color:var(--text);padding:11px 12px}textarea{min-height:180px;resize:vertical;line-height:1.35;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
+    button{border:none;background:var(--accent);color:#fff;font-weight:800;padding:12px 14px;cursor:pointer}button:hover{background:var(--accent-dark)}button.secondary{background:#e5e7eb;color:#111827}button.secondary:hover{background:#d1d5db}button:disabled{opacity:.5;cursor:not-allowed}.btnrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .status{border-radius:14px;padding:12px 14px;margin-top:14px;border:1px solid var(--border);background:#f8fafc;color:#374151;white-space:pre-line}.status.good{border-color:#86efac;background:#f0fdf4;color:var(--good)}.status.bad{border-color:#fecaca;background:#fef2f2;color:var(--bad)}.status.info{border-color:#bfdbfe;background:#eff6ff;color:var(--info)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.stat{border:1px solid var(--border);border-radius:14px;padding:12px;background:#f8fafc}.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}
+    .maplist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.chip{border:1px solid var(--border);background:#f8fafc;border-radius:999px;padding:8px 10px;font-size:13px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    footer{color:var(--muted);font-size:13px;text-align:center;margin-top:24px}
+    @media (max-width:760px){.grid{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.btnrow{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.maplist{grid-template-columns:1fr}.hero{padding:22px}.page{padding-top:18px}}
+
+  </style>
+
+<!-- tool-source-attribution:style-start -->
+<style>
+  .tool-source-attribution {
+    max-width: 960px;
+    margin: 24px auto 0;
+    padding: 18px 20px;
+    border: 1px solid var(--border, #d1d5db);
+    border-radius: 16px;
+    background: var(--card, #ffffff);
+    box-shadow: var(--shadow, 0 8px 24px rgba(0,0,0,.08));
+  }
+
+  .tool-source-attribution h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .tool-source-attribution p {
+    margin: 0 0 8px;
+    color: var(--muted, #6b7280);
+    line-height: 1.5;
+  }
+
+  .tool-source-attribution a {
+    color: var(--accent, #2563eb);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .tool-source-attribution a:hover {
+    text-decoration: underline;
+  }
+
+  body.dark .tool-source-attribution {
+    background: var(--card, #111827);
+    border-color: var(--border, #334155);
+  }
+</style>
+<!-- tool-source-attribution:style-end -->
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">OsmAnd tool</div>
+      <h1>Google Map to OsmAnd GPX Package</h1>
+      <p class="lead">Build a ZIP package of OsmAnd-style GPX files from a Google My Maps KML/KMZ export.</p>
+    </section>
+    <div class="grid">
+      <section class="card">
+        <h2>What it does</h2>
+        <p>Create an OsmAnd GPX package from a Google My Maps export. Tracks are saved as separate GPX files, and waypoints are grouped into a waypoint GPX file.</p>
+        <ol class="steps">
+          <li>Paste a Google My Maps ID to open the KML export link, or export KML/KMZ manually.</li>
+          <li>Drop the exported KML/KMZ file here.</li>
+          <li>Download a ZIP package and copy/import the GPX files into OsmAnd.</li>
+        </ol>
+        <div class="note">This static browser page cannot silently fetch private Google maps. The map must be shared/exportable, then uploaded here as KML/KMZ.</div>
+      </section>
+      <section class="card">
+        <h2>Package builder</h2>
+        <div class="controls">
+          <div class="full"><label for="mapId">Google My Maps ID</label><input id="mapId" type="text" placeholder="Paste the value after mid= from a My Maps URL" /></div>
+          <div><button id="openExport" class="secondary" type="button">Open Google KML export</button></div>
+          <div><label><input id="preserveLayers" type="checkbox" checked /> Preserve layers as folders</label></div>
+        </div>
+        <div id="drop" class="drop" style="margin-top:14px"><strong>Drop exported KML/KMZ here</strong><span>or click to choose a file</span></div>
+        <input id="fileInput" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" hidden />
+        <div class="controls">
+          <div><label for="width">Track width</label><input id="width" type="number" min="1" max="24" value="6" /></div>
+          <div><label><input id="arrows" type="checkbox" /> Direction arrows</label></div>
+        </div>
+        <div id="status" class="status info">Export a Google My Maps KML/KMZ file, then drop it here.</div>
+        <div class="stats">
+          <div class="stat"><b id="wpCount">0</b><span>Waypoints</span></div>
+          <div class="stat"><b id="trackCount">0</b><span>Tracks</span></div>
+          <div class="stat"><b id="unknownCount">0</b><span>Unknown icons</span></div>
+        </div>
+        <div class="btnrow"><button id="downloadZip" disabled>Download GPX ZIP</button><button id="downloadSingle" class="secondary" disabled>Download single GPX</button></div>
+        <label for="preview" style="margin-top:12px">Package preview</label><textarea id="preview" readonly placeholder="Generated files will be listed here"></textarea>
+      </section>
+    </div>
+    <footer>Client-side OsmAnd helper page. Files are processed in your browser.</footer>
+  
+  <!-- tool-source-attribution:start -->
+  <section class="tool-source-attribution">
+    <h2>Original project / Credits</h2>
+    <p>This browser-based version was adapted for this site from the original Google My Maps to OsmAnd GPX project.</p>
+    <p>
+      Original GitHub project:
+      <a href="https://github.com/tmusolf/GoogleMapToOSMAndGPX" target="_blank" rel="noopener noreferrer">tmusolf/GoogleMapToOSMAndGPX</a>
+    </p>
+  </section>
+  <!-- tool-source-attribution:end -->
+
+</main>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+
+    // Use the same theme as the main Docusaurus site.
+    function getSavedTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+      }
+
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+
+      return 'light';
+    }
+
+    function applyThemeFromSite() {
+      const theme = getSavedTheme();
+      document.body.classList.toggle('dark', theme === 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    applyThemeFromSite();
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'theme') {
+        applyThemeFromSite();
+      }
+    });
+
+
+    const NS = { osmand: 'https://osmand.net' };
+    const $ = (id) => document.getElementById(id);
+    const esc = (s='') => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const cleanFileName = (s='item') => String(s).trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').slice(0,90) || 'item';
+    function nodeName(n){ return (n && (n.localName || n.nodeName || '')).replace(/^.*:/,''); }
+    function children(el, name){ return Array.from(el?.children || []).filter(n => nodeName(n) === name); }
+    function all(el, name){ return Array.from(el?.getElementsByTagName('*') || []).filter(n => nodeName(n) === name); }
+    function first(el, name){ return all(el, name)[0] || null; }
+    function textOf(el, name){ const n = first(el, name); return n ? n.textContent.trim() : ''; }
+    function directTextOf(el, name){ const n = children(el, name)[0]; return n ? n.textContent.trim() : ''; }
+    function parseCoords(text){
+      return String(text || '').trim().split(/\s+/).map(chunk => {
+        const [lon, lat, ele] = chunk.split(',').map(Number);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        return {lat, lon, ele: Number.isFinite(ele) ? ele : null};
+      }).filter(Boolean);
+    }
+    function parseGxTrack(trackEl){
+      return all(trackEl, 'coord').map(n => {
+        const [lon, lat, ele] = n.textContent.trim().split(/\s+/).map(Number);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        return {lat, lon, ele: Number.isFinite(ele) ? ele : null};
+      }).filter(Boolean);
+    }
+    function kmlColorToHex(kmlColor, fallback='#2563eb'){
+      const c = String(kmlColor || '').trim().replace('#','');
+      if (/^[0-9a-fA-F]{8}$/.test(c)) return '#' + c.slice(6,8) + c.slice(4,6) + c.slice(2,4);
+      if (/^[0-9a-fA-F]{6}$/.test(c)) return '#' + c;
+      return fallback;
+    }
+    function kmlAlpha(kmlColor, fallback='ff'){
+      const c = String(kmlColor || '').trim().replace('#','');
+      return /^[0-9a-fA-F]{8}$/.test(c) ? c.slice(0,2).toLowerCase() : fallback;
+    }
+    const iconRules = [
+      [/camp|tent|campsite|campground/i, 'special_tent'], [/hotel|lodg|motel|bed/i, 'accommodation_hotel'],
+      [/restaurant|dining|food|meal/i, 'amenity_restaurant'], [/cafe|coffee/i, 'amenity_cafe'], [/bar|beer|pub/i, 'amenity_bar'],
+      [/fuel|gas|petrol/i, 'amenity_fuel'], [/park.*lot|parking/i, 'amenity_parking'], [/info|information/i, 'amenity_information'],
+      [/flag/i, 'special_flag'], [/star|favorite/i, 'special_star'], [/airport|plane/i, 'transport_airport'],
+      [/bus/i, 'transport_bus_stop'], [/train|rail/i, 'transport_train_station'], [/hospital|medical/i, 'amenity_hospital'],
+      [/pharmacy/i, 'amenity_pharmacy'], [/grocery|supermarket/i, 'shop_supermarket'], [/shop|store/i, 'shop_yes'],
+      [/museum/i, 'tourism_museum'], [/camera|photo/i, 'tourism_viewpoint'], [/waterfall/i, 'natural_waterfall'],
+      [/picnic/i, 'tourism_picnic_site'], [/beach/i, 'natural_beach'], [/bike|bicycle|cycling/i, 'sport_cycling'],
+      [/hike|trail|walking/i, 'special_trekking'], [/car|auto/i, 'transport_car'], [/boat|marina|ferry/i, 'transport_marina'],
+      [/question|unknown/i, 'special_question'], [/marker|placemark|pin/i, 'special_marker']
+    ];
+    function osmandIconFromHref(href=''){
+      for (const [re, icon] of iconRules) if (re.test(href)) return icon;
+      return 'special_star';
+    }
+    function buildStyles(xml){
+      const styles = new Map();
+      all(xml, 'Style').forEach(style => {
+        const id = style.getAttribute('id'); if (!id) return;
+        styles.set('#' + id, {
+          iconHref: textOf(first(style, 'IconStyle') || style, 'href'),
+          iconColor: kmlColorToHex(textOf(first(style, 'IconStyle') || style, 'color'), '#e11d48'),
+          lineColor: kmlColorToHex(textOf(first(style, 'LineStyle') || style, 'color'), '#2563eb'),
+          lineAlpha: kmlAlpha(textOf(first(style, 'LineStyle') || style, 'color'), 'ff'),
+          width: Number(textOf(first(style, 'LineStyle') || style, 'width')) || null
+        });
+      });
+      all(xml, 'StyleMap').forEach(sm => {
+        const id = sm.getAttribute('id'); if (!id) return;
+        const pairs = all(sm, 'Pair');
+        const normal = pairs.find(p => textOf(p, 'key') === 'normal') || pairs[0];
+        const url = normal ? textOf(normal, 'styleUrl') : '';
+        if (url && styles.has(url)) styles.set('#' + id, styles.get(url));
+      });
+      return styles;
+    }
+    function parseKml(xml){
+      const styles = buildStyles(xml);
+      const waypoints = []; const tracks = []; const unknownIcons = new Set();
+      function parsePlacemark(pm, layer){
+        const name = directTextOf(pm, 'name') || 'Untitled';
+        const desc = directTextOf(pm, 'description');
+        const styleUrl = directTextOf(pm, 'styleUrl');
+        const style = styles.get(styleUrl) || {};
+        const iconHref = style.iconHref || '';
+        const icon = osmandIconFromHref(iconHref || name);
+        if (!iconHref) unknownIcons.add(name);
+        all(pm, 'Point').forEach(point => {
+          const coords = parseCoords(textOf(point, 'coordinates'));
+          if (coords[0]) waypoints.push({name, desc, layer, ...coords[0], icon, color:style.iconColor || '#e11d48', sourceIcon: iconHref});
+        });
+        all(pm, 'LineString').forEach(line => {
+          const coords = parseCoords(textOf(line, 'coordinates'));
+          if (coords.length) tracks.push({name, desc, layer, coords, color:style.lineColor || '#2563eb', alpha:style.lineAlpha || 'ff', width:style.width});
+        });
+        all(pm, 'Track').forEach(track => {
+          const coords = parseGxTrack(track);
+          if (coords.length) tracks.push({name, desc, layer, coords, color:style.lineColor || '#2563eb', alpha:style.lineAlpha || 'ff', width:style.width});
+        });
+      }
+      function walk(container, layer){
+        for (const child of Array.from(container.children || [])) {
+          const nm = nodeName(child);
+          if (nm === 'Folder' || nm === 'Document') {
+            const nextLayer = nm === 'Folder' ? (directTextOf(child, 'name') || layer || 'Layer') : layer;
+            walk(child, nextLayer);
+          } else if (nm === 'Placemark') parsePlacemark(child, layer || 'Map');
+        }
+      }
+      walk(xml.documentElement, 'Map');
+      return {waypoints, tracks, unknownIcons:Array.from(unknownIcons)};
+    }
+    async function readKmlOrKmz(file){
+      const name = (file.name || '').toLowerCase();
+      if (name.endsWith('.kmz')) {
+        if (!window.JSZip) throw new Error('KMZ support requires JSZip. Check your internet connection or upload a KML file instead.');
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const kmlEntry = Object.values(zip.files).find(f => !f.dir && f.name.toLowerCase().endsWith('.kml'));
+        if (!kmlEntry) throw new Error('No KML file found inside this KMZ.');
+        return await kmlEntry.async('text');
+      }
+      return await file.text();
+    }
+    function parseXml(text){
+      const xml = new DOMParser().parseFromString(text, 'application/xml');
+      if (xml.getElementsByTagName('parsererror').length) throw new Error('The file could not be parsed as KML/XML.');
+      return xml;
+    }
+    function eleTag(p){ return p.ele == null ? '' : `\n        <ele>${p.ele}</ele>`; }
+    function gpxHeader(){ return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Eugene Kizevich OsmAnd Tools" xmlns="http://www.topografix.com/GPX/1/1" xmlns:osmand="https://osmand.net">`; }
+    function gpxFooter(){ return `\n</gpx>\n`; }
+    function waypointGpx(w){
+      return `\n  <wpt lat="${w.lat}" lon="${w.lon}">${eleTag(w)}\n    <name>${esc(w.name)}</name>${w.desc ? `\n    <desc>${esc(w.desc)}</desc>` : ''}\n    <extensions>\n      <osmand:icon>${esc(w.icon || 'special_star')}</osmand:icon>\n      <osmand:color>${esc(w.color || '#e11d48')}</osmand:color>\n    </extensions>\n  </wpt>`;
+    }
+    function trackGpx(t, opts={}){
+      const width = opts.width || t.width || 6;
+      const points = t.coords.map(p => `\n      <trkpt lat="${p.lat}" lon="${p.lon}">${p.ele == null ? '' : `\n        <ele>${p.ele}</ele>\n      `}</trkpt>`).join('');
+      return `\n  <trk>\n    <name>${esc(t.name)}</name>${t.desc ? `\n    <desc>${esc(t.desc)}</desc>` : ''}\n    <extensions>\n      <osmand:color>${esc(t.color || opts.color || '#2563eb')}</osmand:color>\n      <osmand:width>${esc(width)}</osmand:width>${opts.arrows ? `\n      <osmand:show_arrows>true</osmand:show_arrows>` : ''}${opts.ends ? `\n      <osmand:show_start_finish>true</osmand:show_start_finish>` : ''}\n    </extensions>\n    <trkseg>${points}\n    </trkseg>\n  </trk>`;
+    }
+    function buildSingleGpx(data, opts={}){ return gpxHeader() + data.waypoints.map(waypointGpx).join('') + data.tracks.map(t => trackGpx(t, opts)).join('') + gpxFooter(); }
+    function buildWaypointsGpx(waypoints){ return gpxHeader() + waypoints.map(waypointGpx).join('') + gpxFooter(); }
+    function downloadText(filename, text, mime='application/octet-stream'){
+      const blob = new Blob([text], {type:mime}); const url = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+    function setupDrop(drop, fileInput, onFile){
+      drop.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => fileInput.files[0] && onFile(fileInput.files[0]));
+      ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+      ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+      drop.addEventListener('drop', e => { const file = e.dataTransfer.files && e.dataTransfer.files[0]; if (file) onFile(file); });
+    }
+    function setStatus(msg, cls='info'){ const el=$('status'); el.className = 'status ' + cls; el.textContent = msg; }
+    function updateStats(data){
+      $('wpCount').textContent = data.waypoints.length; $('trackCount').textContent = data.tracks.length; $('unknownCount').textContent = data.unknownIcons?.length || 0;
+      const iconList = $('iconList'); if (iconList) {
+        const icons = [...new Set(data.waypoints.map(w => w.icon))].sort();
+        iconList.innerHTML = icons.slice(0,20).map(i => `<div class="chip">${esc(i)}</div>`).join('') || '<div class="chip">No waypoint icons found</div>';
+      }
+    }
+
+
+    let currentData = null;
+    $('openExport').addEventListener('click', () => {
+      const mid = $('mapId').value.trim();
+      if (!mid) { setStatus('Paste a Google My Maps ID first. It is the value after mid= in the map URL.', 'bad'); return; }
+      const url = 'https://www.google.com/maps/d/kml?mid=' + encodeURIComponent(mid) + '&forcekml=1';
+      window.open(url, '_blank', 'noopener');
+      setStatus('Google export URL opened. Save the KML/KMZ file, then upload it here.', 'info');
+    });
+    function opts(){ return {width:Number($('width').value)||6, arrows:$('arrows').checked}; }
+    function layerPath(name){ return cleanFileName(name || 'Map'); }
+    function rebuildPreview(){
+      if (!currentData) return;
+      const preserve = $('preserveLayers').checked;
+      const lines = [];
+      const groups = new Map();
+      const key = item => preserve ? layerPath(item.layer) : 'Map';
+      currentData.waypoints.forEach(w => { const k = key(w); if (!groups.has(k)) groups.set(k,{wps:[],trs:[]}); groups.get(k).wps.push(w); });
+      currentData.tracks.forEach(t => { const k = key(t); if (!groups.has(k)) groups.set(k,{wps:[],trs:[]}); groups.get(k).trs.push(t); });
+      groups.forEach((g, layer) => {
+        if (g.wps.length) lines.push(`${layer}/Waypoints.gpx (${g.wps.length} waypoint(s))`);
+        g.trs.forEach((t,i) => lines.push(`${layer}/${cleanFileName(t.name || 'Track '+(i+1))}.gpx (${t.coords.length} point(s))`));
+      });
+      $('preview').value = lines.join('\n') || 'No files generated.';
+    }
+    async function handleFile(file){
+      try{
+        setStatus('Reading ' + file.name + '...', 'info');
+        currentData = parseKml(parseXml(await readKmlOrKmz(file))); updateStats(currentData); rebuildPreview();
+        $('downloadZip').disabled = false; $('downloadSingle').disabled = false;
+        setStatus(`Ready: ${currentData.waypoints.length} waypoint(s), ${currentData.tracks.length} track(s).`, 'good');
+      }catch(e){ currentData=null; setStatus(e.message, 'bad'); }
+    }
+    setupDrop($('drop'), $('fileInput'), handleFile);
+    ['preserveLayers','width','arrows'].forEach(id => $(id).addEventListener('change', rebuildPreview));
+    $('downloadSingle').addEventListener('click', () => currentData && downloadText('google-map-osmand.gpx', buildSingleGpx(currentData, opts()), 'application/gpx+xml'));
+    $('downloadZip').addEventListener('click', async () => {
+      if (!currentData) return;
+      if (!window.JSZip) { setStatus('ZIP download requires JSZip. Check your internet connection.', 'bad'); return; }
+      const zip = new JSZip(); const preserve = $('preserveLayers').checked; const groups = new Map(); const key = item => preserve ? layerPath(item.layer) : 'Map';
+      currentData.waypoints.forEach(w => { const k=key(w); if(!groups.has(k)) groups.set(k,{wps:[],trs:[]}); groups.get(k).wps.push(w); });
+      currentData.tracks.forEach(t => { const k=key(t); if(!groups.has(k)) groups.set(k,{wps:[],trs:[]}); groups.get(k).trs.push(t); });
+      groups.forEach((g, layer) => {
+        const folder = preserve ? zip.folder(layer) : zip;
+        if (g.wps.length) folder.file('Waypoints.gpx', buildWaypointsGpx(g.wps));
+        g.trs.forEach((t, i) => folder.file(cleanFileName(t.name || 'Track ' + (i+1)) + '.gpx', gpxHeader() + trackGpx(t, opts()) + gpxFooter()));
+      });
+      const blob = await zip.generateAsync({type:'blob'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='google-map-osmand-gpx.zip'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),500);
+    });
+
+  </script>
+</body>
+</html>
