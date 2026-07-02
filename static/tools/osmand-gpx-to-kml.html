@@ -100,9 +100,11 @@
 
     .grid{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:1fr;
       gap:18px;
       align-items:start;
+      max-width:760px;
+      margin:0 auto;
     }
 
     .card{
@@ -527,6 +529,79 @@
     }
   </style>
 
+
+<!-- osmand-gpx-to-kml-layout-fix:start -->
+<style>
+  /* Final layout override for OsmAnd GPX to KML page */
+  body {
+    min-width: 0;
+  }
+
+  main,
+  .page,
+  .app {
+    width: 100%;
+  }
+
+  .hero {
+    width: min(100% - 32px, 960px) !important;
+    max-width: 960px !important;
+    margin: 24px auto 18px !important;
+  }
+
+  .grid {
+    width: min(100% - 32px, 960px) !important;
+    max-width: 960px !important;
+    margin: 0 auto 18px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
+    gap: 18px !important;
+    align-items: start !important;
+  }
+
+  .grid > .card {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .grid > .toolCard {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .grid > .card:not(.toolCard) {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .tool-source-attribution {
+    width: min(100% - 32px, 960px) !important;
+    max-width: 960px !important;
+    margin: 18px auto 32px !important;
+  }
+
+  @media (max-width: 760px) {
+    .grid {
+      grid-template-columns: 1fr !important;
+      width: min(100% - 24px, 560px) !important;
+    }
+
+    .grid > .card,
+    .grid > .toolCard,
+    .grid > .card:not(.toolCard) {
+      grid-column: auto !important;
+      grid-row: auto !important;
+    }
+
+    .hero,
+    .tool-source-attribution {
+      width: min(100% - 24px, 560px) !important;
+    }
+  }
+</style>
+<!-- osmand-gpx-to-kml-layout-fix:end -->
+
 </head>
 <body>
   <main class="page">
@@ -544,6 +619,25 @@
     </section>
 
     <div class="grid">
+      <section class="card">
+        <h2>What this tool does</h2>
+        <p>
+          OsmAnd GPX favorites and waypoint files can be imported into other map tools, but external tools may use
+          only a default icon. This converter tries to preserve useful waypoint details by mapping OsmAnd icon names
+          to visually similar Google-style icons.
+        </p>
+        <ol class="steps">
+          <li>Export or prepare a GPX file with OsmAnd waypoints.</li>
+          <li>Drop the file onto this page, or use the file picker.</li>
+          <li>Download the generated KML file.</li>
+          <li>Import the KML into Google My Maps or another KML-compatible tool.</li>
+        </ol>
+        <div class="note">
+          This browser version converts waypoint data only. GPX track geometry is not converted here. Unknown OsmAnd
+          icons are marked with an x-cross style so they are easy to find and improve later.
+        </div>
+      </section>
+
       <section class="card toolCard">
 
         <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop GPX file here or choose a GPX file">
@@ -578,25 +672,6 @@
           <button id="downloadBtn" type="button" disabled>Download KML</button>
           <button id="copyBtn" class="secondary" type="button" disabled>Copy KML</button>
           <button id="resetBtn" class="secondary" type="button">Reset</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>What this tool does</h2>
-        <p>
-          OsmAnd GPX favorites and waypoint files can be imported into other map tools, but external tools may use
-          only a default icon. This converter tries to preserve useful waypoint details by mapping OsmAnd icon names
-          to visually similar Google-style icons.
-        </p>
-        <ol class="steps">
-          <li>Export or prepare a GPX file with OsmAnd waypoints.</li>
-          <li>Drop the file onto this page, or use the file picker.</li>
-          <li>Download the generated KML file.</li>
-          <li>Import the KML into Google My Maps or another KML-compatible tool.</li>
-        </ol>
-        <div class="note">
-          This browser version converts waypoint data only. GPX track geometry is not converted here. Unknown OsmAnd
-          icons are marked with an x-cross style so they are easy to find and improve later.
         </div>
       </section>
     </div>
