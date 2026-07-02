@@ -311,42 +311,42 @@ export default function Home() {
           </p>
           <div className={styles.linkGrid}>
 
-            <Link className={styles.linkCard} to={osmandGpxToKmlUrl}>
+            <a className={styles.linkCard} href={osmandGpxToKmlUrl}>
               <strong>OsmAnd GPX to KML Converter</strong>
               <span>
                 Convert OsmAnd GPX waypoints into a KML file for Google My
                 Maps, with similar icon styles and colors where possible.
               </span>
-            </Link>
-            <Link className={styles.linkCard} to={gpxToolUrl}>
+            </a>
+            <a className={styles.linkCard} href={gpxToolUrl}>
               <strong>GPX Waypoints to OsmAnd URL</strong>
               <span>
                 Upload a GPX file with waypoints or route points, choose a
                 routing profile, and open the generated route directly in
                 OsmAnd Web Map.
               </span>
-            </Link>
-            <Link className={styles.linkCard} to={googleMapToOsmandGpxUrl}>
+            </a>
+            <a className={styles.linkCard} href={googleMapToOsmandGpxUrl}>
               <strong>Google Map to OsmAnd GPX Package</strong>
               <span>
                 Create a ZIP package of OsmAnd-style GPX files from a Google
                 My Maps KML or KMZ export, with tracks, waypoints, and layers.
               </span>
-            </Link>
-            <Link className={styles.linkCard} to={kmlToOsmandGpxUrl}>
+            </a>
+            <a className={styles.linkCard} href={kmlToOsmandGpxUrl}>
               <strong>KML to OsmAnd GPX Converter</strong>
               <span>
                 Convert a Google My Maps KML or KMZ export into a single
                 OsmAnd-style GPX file with tracks, waypoints, colors, and icons.
               </span>
-            </Link>
-            <Link className={styles.linkCard} to={gmapIconsToOsmandUrl}>
+            </a>
+            <a className={styles.linkCard} href={gmapIconsToOsmandUrl}>
               <strong>Google Maps Icons to OsmAnd GPX</strong>
               <span>
                 Convert Google My Maps placemarks into OsmAnd GPX waypoints
                 with similar OsmAnd icons where possible.
               </span>
-            </Link>
+            </a>
 
           </div>
         </div>
