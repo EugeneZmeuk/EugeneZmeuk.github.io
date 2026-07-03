@@ -83,15 +83,40 @@ const config = {
           },
           {
             type: 'dropdown',
-            label: 'Game',
+            label: 'Games',
             position: 'left',
             items: [
+              {
+                to: '/games',
+                label: 'All games',
+              },
               {
                 to: '/games/snake',
                 label: 'Snake',
               },
+              {
+                to: '/games/memory',
+                label: 'Memory',
+              },
+              {
+                to: '/games/route-runner',
+                label: 'Route Runner',
+              },
+              {
+                to: '/games/map-quiz',
+                label: 'Map Quiz',
+              },
+              {
+                to: '/games/pin-catcher',
+                label: 'Pin Catcher',
+              },
+              {
+                to: '/games/compass',
+                label: 'Compass Reaction',
+              },
             ],
           },
+          
 {
             href: 'https://osmand.net/',
             label: 'OsmAnd',
