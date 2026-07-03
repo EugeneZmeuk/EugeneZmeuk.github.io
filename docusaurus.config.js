@@ -81,6 +81,17 @@ const config = {
             label: 'Blog',
             position: 'left',
           },
+          {
+            type: 'dropdown',
+            label: 'Game',
+            position: 'left',
+            items: [
+              {
+                to: '/games/snake',
+                label: 'Snake',
+              },
+            ],
+          },
 {
             href: 'https://osmand.net/',
             label: 'OsmAnd',
