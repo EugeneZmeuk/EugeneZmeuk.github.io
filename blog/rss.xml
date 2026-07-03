@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Eugene Kizevich Blog</title>
+        <link>https://eugenezmeuk.github.io/blog/</link>
+        <description>Eugene Kizevich Blog</description>
+        <lastBuildDate>Thu, 02 Jul 2026 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Welcome]]></title>
+            <link>https://eugenezmeuk.github.io/blog/welcome/</link>
+            <guid>https://eugenezmeuk.github.io/blog/welcome/</guid>
+            <pubDate>Thu, 02 Jul 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[Hello Everybody! Welcome to my blog. This is a test post to make sure everything is working properly.]]></description>
+            <content:encoded><![CDATA[<p>Hello Everybody! Welcome to my blog. This is a test post to make sure everything is working properly.</p>
+<!-- -->
+<p>I will be posting about various topics here, including technology, programming, and personal experiences. Stay tuned for more updates!</p>]]></content:encoded>
+            <category>Hello</category>
+        </item>
+    </channel>
+</rss>

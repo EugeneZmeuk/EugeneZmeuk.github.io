@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://eugenezmeuk.github.io/blog/</id>
+    <title>Eugene Kizevich Blog</title>
+    <updated>2026-07-02T00:00:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://eugenezmeuk.github.io/blog/"/>
+    <subtitle>Eugene Kizevich Blog</subtitle>
+    <icon>https://eugenezmeuk.github.io/img/osmand_logo.png</icon>
+    <entry>
+        <title type="html"><![CDATA[Welcome]]></title>
+        <id>https://eugenezmeuk.github.io/blog/welcome/</id>
+        <link href="https://eugenezmeuk.github.io/blog/welcome/"/>
+        <updated>2026-07-02T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Hello Everybody! Welcome to my blog. This is a test post to make sure everything is working properly.]]></summary>
+        <content type="html"><![CDATA[<p>Hello Everybody! Welcome to my blog. This is a test post to make sure everything is working properly.</p>
+<!-- -->
+<p>I will be posting about various topics here, including technology, programming, and personal experiences. Stay tuned for more updates!</p>]]></content>
+        <author>
+            <name>Eugene</name>
+            <uri>http://github.com/EugeneZmeuk</uri>
+        </author>
+        <category label="Hello" term="Hello"/>
+    </entry>
+</feed>

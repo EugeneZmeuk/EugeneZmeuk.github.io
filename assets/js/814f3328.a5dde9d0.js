@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocusaurus_temp=self.webpackChunkdocusaurus_temp||[]).push([["833"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome","permalink":"/blog/welcome","unlisted":false,"date":"2026-07-02T00:00:00.000Z"}]}')}}]);
