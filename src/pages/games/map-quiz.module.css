@@ -1,0 +1,85 @@
+.page {
+  min-height: calc(100vh - var(--ifm-navbar-height));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(circle at top, rgba(255, 136, 0, 0.14), transparent 28rem),
+    var(--ifm-background-color);
+}
+
+.card {
+  width: min(100%, 760px);
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--ifm-color-primary);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 7vw, 4.5rem);
+}
+
+.subtitle,
+.progress {
+  color: var(--ifm-color-emphasis-700);
+}
+
+.progress {
+  margin: 1.25rem 0;
+  font-weight: 700;
+}
+
+.question {
+  margin: 1rem auto;
+  max-width: 680px;
+}
+
+.answers {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.answer,
+.next,
+.result button {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: var(--ifm-card-background-color);
+  color: var(--ifm-font-color-base);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.answer:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.correct {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.wrong {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.next,
+.result button {
+  margin-top: 1rem;
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
+.result strong {
+  color: var(--ifm-color-primary);
+}
