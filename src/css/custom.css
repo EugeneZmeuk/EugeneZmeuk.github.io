@@ -111,3 +111,76 @@ html[data-theme='dark'] .alert--secondary {
 }
 /* osmand-orange-theme:end */
 
+
+/* force-osmand-orange:start */
+:root {
+  --ifm-color-primary: #ff8800 !important;
+  --ifm-color-primary-dark: #e67a00 !important;
+  --ifm-color-primary-darker: #d97400 !important;
+  --ifm-color-primary-darkest: #b85f00 !important;
+  --ifm-color-primary-light: #ff981f !important;
+  --ifm-color-primary-lighter: #ffa033 !important;
+  --ifm-color-primary-lightest: #ffb866 !important;
+  --ifm-link-color: #ff8800 !important;
+  --ifm-menu-color-active: #ff8800 !important;
+  --ifm-navbar-link-hover-color: #ff8800 !important;
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #ff9d2e !important;
+  --ifm-color-primary-dark: #ff8f12 !important;
+  --ifm-color-primary-darker: #f58600 !important;
+  --ifm-color-primary-darkest: #c96f00 !important;
+  --ifm-color-primary-light: #ffad52 !important;
+  --ifm-color-primary-lighter: #ffb766 !important;
+  --ifm-color-primary-lightest: #ffd099 !important;
+  --ifm-link-color: #ff9d2e !important;
+  --ifm-menu-color-active: #ff9d2e !important;
+  --ifm-navbar-link-hover-color: #ff9d2e !important;
+}
+
+.navbar__link--active,
+.navbar__link:hover,
+.menu__link--active,
+.menu__link:hover,
+.breadcrumbs__link:hover,
+.breadcrumbs__item--active .breadcrumbs__link,
+.pagination-nav__label {
+  color: var(--ifm-color-primary) !important;
+}
+
+.menu__link--active:not(.menu__link--sublist) {
+  background: rgba(255, 136, 0, 0.10) !important;
+}
+
+html[data-theme='dark'] .menu__link--active:not(.menu__link--sublist) {
+  background: rgba(255, 157, 46, 0.14) !important;
+}
+
+.osmand-note {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 5px solid #ff8800;
+  border-radius: 10px;
+  background: rgba(255, 136, 0, 0.10);
+}
+
+.osmand-note strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #ff8800;
+}
+
+.osmand-note p {
+  margin: 0;
+}
+
+html[data-theme='dark'] .osmand-note {
+  border-left-color: #ff9d2e;
+  background: rgba(255, 157, 46, 0.14);
+}
+
+html[data-theme='dark'] .osmand-note strong {
+  color: #ff9d2e;
+}
+/* force-osmand-orange:end */
