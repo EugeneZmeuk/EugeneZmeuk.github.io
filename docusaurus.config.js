@@ -91,6 +91,10 @@ const config = {
                 label: 'All games',
               },
               {
+                to: '/games/offline-navigator',
+                label: 'Offline Navigator',
+              },
+              {
                 to: '/games/snake',
                 label: 'Snake',
               },
