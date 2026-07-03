@@ -39,8 +39,12 @@ const config = {
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
-        docs: false,
-        blog: false,
+        docs: {
+            path: 'aboutDocs',
+            routeBasePath: 'about',
+            sidebarPath: './sidebars.js',
+          },
+        blog: { showReadingTime: true, },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -54,32 +58,28 @@ const config = {
       image: 'img/osmand_logo.png',
 
       colorMode: {
-        respectPrefersColorScheme: true,
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: false,
       },
-
       navbar: {
         title: 'Eugene Kizevich',
         logo: {
           alt: 'Eugene Kizevich',
           src: 'img/eugene-avatar.png',
-          href: 'https://github.com/EugeneZmeuk',
-          target: '_blank',
+          href: '/',
         },
         items: [
           {
-            type: 'dropdown',
-            label: 'Tools',
+            type: 'docSidebar',
+            sidebarId: 'aboutSidebar',
             position: 'left',
-            items: [
-              {
-                to: '/#osmand-links',
-                label: 'OsmAnd Links',
-              },
-              {
-                to: '/#my-osmand-tools',
-                label: 'My OsmAnd Tools',
-              },
-            ],
+            label: 'About',
+          },
+          {
+            to: '/blog',
+            label: 'Blog',
+            position: 'left',
           },
 {
             href: 'https://osmand.net/',
