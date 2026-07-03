@@ -37,3 +37,77 @@
   object-fit: cover;
   display: block;
 }
+
+/* osmand-orange-theme:start */
+:root {
+  --ifm-color-primary: #ff8800;
+  --ifm-color-primary-dark: #e67a00;
+  --ifm-color-primary-darker: #d97400;
+  --ifm-color-primary-darkest: #b85f00;
+  --ifm-color-primary-light: #ff981f;
+  --ifm-color-primary-lighter: #ffa033;
+  --ifm-color-primary-lightest: #ffb866;
+
+  --ifm-link-color: #ff8800;
+  --ifm-menu-color-active: #ff8800;
+  --ifm-breadcrumb-color-active: #ff8800;
+  --ifm-pagination-nav-color-hover: #ff8800;
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #ff9d2e;
+  --ifm-color-primary-dark: #ff8f12;
+  --ifm-color-primary-darker: #f58600;
+  --ifm-color-primary-darkest: #c96f00;
+  --ifm-color-primary-light: #ffad52;
+  --ifm-color-primary-lighter: #ffb766;
+  --ifm-color-primary-lightest: #ffd099;
+
+  --ifm-link-color: #ff9d2e;
+  --ifm-menu-color-active: #ff9d2e;
+  --ifm-breadcrumb-color-active: #ff9d2e;
+  --ifm-pagination-nav-color-hover: #ff9d2e;
+}
+
+.navbar__link:hover,
+.navbar__link--active,
+.menu__link:hover,
+.breadcrumbs__link:hover,
+.table-of-contents__link:hover,
+.table-of-contents__link--active {
+  color: var(--ifm-color-primary);
+}
+
+.menu__link--active:not(.menu__link--sublist),
+.theme-doc-sidebar-item-link-level-1 .menu__link--active {
+  color: var(--ifm-color-primary);
+  background: rgba(255, 136, 0, 0.10);
+}
+
+html[data-theme='dark'] .menu__link--active:not(.menu__link--sublist),
+html[data-theme='dark'] .theme-doc-sidebar-item-link-level-1 .menu__link--active {
+  background: rgba(255, 157, 46, 0.14);
+}
+
+.pagination-nav__link:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.pagination-nav__sublabel,
+.pagination-nav__label {
+  color: var(--ifm-color-primary);
+}
+
+.alert--success,
+.alert--secondary {
+  --ifm-alert-background-color: rgba(255, 136, 0, 0.10);
+  --ifm-alert-border-color: rgba(255, 136, 0, 0.45);
+}
+
+html[data-theme='dark'] .alert--success,
+html[data-theme='dark'] .alert--secondary {
+  --ifm-alert-background-color: rgba(255, 157, 46, 0.14);
+  --ifm-alert-border-color: rgba(255, 157, 46, 0.50);
+}
+/* osmand-orange-theme:end */
+
