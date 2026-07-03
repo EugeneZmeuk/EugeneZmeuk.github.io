@@ -14,11 +14,11 @@ const config = {
   },
 
   url: 'https://eugenezmeuk.github.io',
-  baseUrl: '/kizevich/',
+  baseUrl: '/',
   trailingSlash: true,
 
   organizationName: 'EugeneZmeuk',
-  projectName: 'kizevich',
+  projectName: 'EugeneZmeuk.github.io',
   deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'throw',
