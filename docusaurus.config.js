@@ -70,6 +70,7 @@ const config = {
           href: '/',
         },
         items: [
+
           {
             type: 'docSidebar',
             sidebarId: 'aboutSidebar',
