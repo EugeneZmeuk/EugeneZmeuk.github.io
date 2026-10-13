@@ -35,6 +35,11 @@ const games = [
     text: 'Catch falling OsmAnd pins before they reach the ground.',
   },
   {
+    title: 'Kill Bugs',
+    href: '/games/kill-bugs',
+    text: 'Map bugs are crawling to your location. Move, aim, and squash them all.',
+  },
+  {
     title: 'Compass Reaction',
     href: '/games/compass',
     text: 'React quickly and choose the correct compass direction.',

@@ -116,6 +116,10 @@ const config = {
                 label: 'Pin Catcher',
               },
               {
+                to: '/games/kill-bugs',
+                label: 'Kill Bugs',
+              },
+              {
                 to: '/games/compass',
                 label: 'Compass Reaction',
               },
