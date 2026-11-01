@@ -120,6 +120,10 @@ const config = {
                 label: 'Kill Bugs',
               },
               {
+                to: '/games/zombie-drive',
+                label: 'Zombie Drive',
+              },
+              {
                 to: '/games/compass',
                 label: 'Compass Reaction',
               },

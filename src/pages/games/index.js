@@ -40,6 +40,11 @@ const games = [
     text: 'Map bugs are crawling to your location. Move, aim, and squash them all.',
   },
   {
+    title: 'Zombie Drive',
+    href: '/games/zombie-drive',
+    text: '3D desktop shooter: drive a gun truck through real streets of Krakow, Minsk and Kyiv full of zombies.',
+  },
+  {
     title: 'Compass Reaction',
     href: '/games/compass',
     text: 'React quickly and choose the correct compass direction.',
