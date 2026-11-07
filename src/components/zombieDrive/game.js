@@ -909,10 +909,10 @@ export class Game {
     const fx = -Math.sin(car.heading);
     const fz = -Math.cos(car.heading);
     const back = 9.5 + Math.abs(car.speed) * 0.12;
-    const target = new THREE.Vector3(car.pos.x - fx * back, 5.2, car.pos.z - fz * back);
+    const target = new THREE.Vector3(car.pos.x - fx * back, 4.3, car.pos.z - fz * back);
     const k = 1 - Math.exp(-dt * 5);
     this.camera.position.lerp(target, k);
-    const look = new THREE.Vector3(car.pos.x + fx * 8, 1.0, car.pos.z + fz * 8);
+    const look = new THREE.Vector3(car.pos.x + fx * 12, 3.0, car.pos.z + fz * 12);
     this.camLook = this.camLook ? this.camLook.lerp(look, k) : look;
     this.camera.lookAt(this.camLook);
   }

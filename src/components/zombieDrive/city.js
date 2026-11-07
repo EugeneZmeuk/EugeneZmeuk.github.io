@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {buildBuildings} from './buildings';
 import {buildGround} from './ground';
-import {facadeMaterial, roofMaterial} from './materials';
+import {buildLandmarks} from './landmarks';
+import {facadeMaterial, landmarkMaterial, roofMaterial} from './materials';
 import {buildTrees} from './trees';
 
 // Level data is in metres: x east, y north. World: x east, z = -north, y up.
@@ -29,11 +30,13 @@ export class City {
     this.cullable = [];
     const city = buildBuildings(data, level, facadeMaterial(this.uniforms), roofMaterial(this.uniforms));
     this.group.add(city);
+    this.landmarks = buildLandmarks(data, landmarkMaterial(this.uniforms));
+    this.group.add(this.landmarks);
     const trees = buildTrees(data, this, level);
     this.group.add(trees.group);
     for (const t of trees.positions) this.setBlocked(t[0], -t[1]);
     this.treeCount = trees.positions.length;
-    for (const m of [...city.children, ...trees.group.children]) {
+    for (const m of [...city.children, ...this.landmarks.children, ...trees.group.children]) {
       if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
       const sphere = m.boundingSphere || m.geometry.boundingSphere;
       this.cullable.push({mesh: m, center: sphere.center.clone(), radius: sphere.radius});
@@ -120,6 +123,22 @@ export class City {
     for (const r of this.data.roads) if (r.b) stroke(r, 2);
     ctx.fillStyle = '#000';
     for (const b of this.data.buildings) if (!b.mh || b.mh < 3) fill(b);
+    for (const m of this.data.landmarks || []) {
+      if (m.solid) {
+        const [a, b] = px([m.x, m.y]);
+        ctx.beginPath();
+        ctx.arc(a, b, m.solid / CELL, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (m.hill) {
+        fill({p: m.ring});
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 18 / CELL;
+        ctx.beginPath();
+        trace(m.ring);
+        ctx.stroke();
+      }
+    }
     const img = ctx.getImageData(0, 0, cols, rows).data;
     const grid = new Uint8Array(cols * rows);
     for (let i = 0; i < cols * rows; i++) grid[i] = img[i * 4] < 128 ? 1 : 0;

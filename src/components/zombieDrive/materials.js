@@ -248,6 +248,66 @@ export function roofMaterial(uniforms) {
   });
 }
 
+/**
+ * Landmarks: as roofs, plus 4 gold, 5 brick, 6 stone blocks, 7 glass.
+ * Floodlit at night, since real lights on every monument would cost too much.
+ */
+export function landmarkMaterial(uniforms) {
+  const m = new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.85, metalness: 0});
+  return patch(m, 'zd-landmark', uniforms, {
+    vertexHead: 'attribute float aPat; varying float vPat;',
+    vertexBody: 'vPat = aPat;',
+    fragmentHead: 'varying float vPat; uniform float uNight; uniform vec3 uGlass;',
+    color: /* glsl */ `
+      vec2 rp = vWPos.xz;
+      float rd = length(vViewPosition);
+      float rnear = clamp(1.0 - rd / 110.0, 0.0, 1.0);
+      vec3 rc = diffuseColor.rgb;
+      float rRough = 0.85;
+      float lit = 0.0;
+      float nv = clamp(dot(normalize(vViewPosition), normalize(vNormal)), 0.0, 1.0);
+      rc *= 0.9 + 0.2 * fbm(vec2(rp.x + rp.y, vWPos.y) * 0.3);
+      if (vPat < 0.5) {
+        rc *= 0.84 + 0.32 * fbm(rp * 0.35);
+      } else if (vPat < 1.5) {
+        float row = fract(vWPos.y * 3.2);
+        rc *= 1.0 - smoothstep(0.72, 1.0, row) * 0.34 * rnear;
+      } else if (vPat < 2.5) {
+        float seam = abs(fract((rp.x + rp.y) * 1.3) - 0.5);
+        rc *= 1.0 + (0.5 - smoothstep(0.0, 0.06, seam)) * 0.3 * rnear;
+        rRough = 0.5;
+      } else if (vPat < 3.5) {
+        rRough = 0.8;
+      } else if (vPat < 4.5) {
+        rc = mix(rc, vec3(1.0, 0.92, 0.66), pow(1.0 - nv, 2.0) * 0.7);
+        rRough = 0.3;
+      } else if (vPat < 5.5) {
+        float y = vWPos.y * 6.0;
+        float along = (rp.x + rp.y) * 2.6 + step(1.0, mod(floor(y), 2.0)) * 0.5;
+        float joint = max(smoothstep(0.86, 0.94, fract(y)), smoothstep(0.92, 0.97, fract(along)));
+        rc *= 1.0 + (h21(vec2(floor(along), floor(y))) - 0.5) * 0.34 * rnear;
+        rc = mix(rc, rc * 0.66 + 0.05, joint * rnear);
+      } else if (vPat < 6.5) {
+        float y = vWPos.y * 1.6;
+        float along = (rp.x + rp.y) * 0.8 + step(1.0, mod(floor(y), 2.0)) * 0.5;
+        float joint = max(smoothstep(0.94, 0.98, fract(y)), smoothstep(0.96, 0.99, fract(along)));
+        rc *= 1.0 + (h21(vec2(floor(along), floor(y))) - 0.5) * 0.14;
+        rc = mix(rc, rc * 0.72, joint * rnear);
+      } else {
+        rc = mix(rc, uGlass, 0.2 + 0.7 * pow(1.0 - nv, 2.5));
+        rRough = 0.2;
+        lit = step(0.72, h21(floor(vec2(rp.x + rp.y, vWPos.y) * vec2(0.5, 0.31))));
+      }
+      diffuseColor.rgb = rc;
+    `,
+    rough: 'roughnessFactor = rRough;',
+    emissive: /* glsl */ `
+      totalEmissiveRadiance += diffuseColor.rgb * uNight * (vPat > 6.5 ? 0.0 : 0.5);
+      totalEmissiveRadiance += vec3(1.0, 0.68, 0.32) * uNight * lit * 0.34;
+    `,
+  });
+}
+
 /** Foliage and trunks. Vertex colour is multiplied by the per-instance colour. */
 export function treeMaterial() {
   return new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.9, metalness: 0, flatShading: true});

@@ -13,6 +13,8 @@ import json
 import math
 import os
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zlib
@@ -20,10 +22,61 @@ import zlib
 LEVELS = {
     "krakow": dict(bbox=(50.0515, 19.9290, 50.0665, 19.9480), center=(50.0590, 19.9385),
                    start=(50.0617, 19.9373), finish=(50.0543, 19.9355), name="Krakow Old Town", default_h=14),
-    "minsk": dict(bbox=(53.8950, 27.5480, 53.9100, 27.5750), center=(53.9025, 27.5615),
-                  start=(53.8975, 27.5535), finish=(53.9080, 27.5700), name="Minsk centre", default_h=18),
+    "minsk": dict(bbox=(53.8935, 27.5445, 53.9120, 27.5800), center=(53.9025, 27.5615),
+                  start=(53.8975, 27.5535), finish=(53.9084, 27.5732), name="Minsk centre", default_h=18),
     "kyiv": dict(bbox=(50.4430, 30.5120, 50.4570, 30.5350), center=(50.4500, 30.5235),
                  start=(50.4460, 30.5210), finish=(50.4503, 30.5245), name="Kyiv, Khreshchatyk", default_h=20),
+}
+
+# Dedicated models. (builder, OSM element, options)
+#   front: compass side the main front of the model faces
+#   on:    height of the ground it stands on
+#   hill:  the outline becomes a walled hill of this height, and what stands on it is raised
+#   solid: radius kept clear of cars, for monuments that are not mapped as buildings
+LANDMARKS = {
+    "krakow": [
+        ("wawel_hill", "w785550415", {"hill": 16}),
+        ("wawel_cathedral", "w85151350", {"on": 16, "front": "w"}),
+        ("sukiennice", "w23256528", {}),
+        ("mariacki", "w26195267", {"front": "w"}),
+        ("town_hall_tower", "w25122842", {}),
+        ("barbakan", "w1013180059", {}),
+        ("florian_gate", "w39357538", {"front": "n"}),
+        ("slowacki_theatre", "w153942974", {"front": "w"}),
+        ("peter_paul", "w104374972", {"front": "w"}),
+        ("st_andrew", "w29271073", {"front": "w"}),
+        ("st_wojciech", "w29271113", {"front": "w"}),
+        ("mickiewicz", "w374515883", {"solid": 5}),
+    ],
+    "minsk": [
+        ("victory_monument", "w346312697", {"solid": 9}),
+        ("palace_republic", "w25327560", {"front": "e"}),
+        ("trade_unions_minsk", "w25327558", {"front": "w"}),
+        ("town_hall_minsk", "w25387231", {"front": "e"}),
+        ("holy_spirit", "w538208752", {"front": "w"}),
+        ("st_mary_minsk", "w482601336", {"front": "e"}),
+        ("red_church", "w100418249", {"front": "e"}),
+        ("peter_paul_minsk", "w25387312", {"front": "w"}),
+        ("kupala_theatre", "w25327619", {"front": "e"}),
+        ("opera_minsk", "w25327478", {}),
+        ("gum", "w27422412", {"front": "s"}),
+        ("circus", "w1118730334", {}),
+    ],
+    "kyiv": [
+        ("independence", "w171599273", {"solid": 7}),
+        ("hotel_ukraina", "w30643028", {"front": "n"}),
+        ("trade_unions_kyiv", "w260794544", {"front": "s"}),
+        ("st_sophia", "w27830282", {"front": "w"}),
+        ("sophia_bell", "w27830522", {}),
+        ("st_michael", "w27830307", {"front": "w"}),
+        ("golden_gate", "w27830130", {"front": "w"}),
+        ("lyadski", "w667916640", {"solid": 6}),
+        ("freedom_arch", "w23692782", {}),
+        ("ukrainian_house", "w27830362", {"front": "s"}),
+        ("opera_kyiv", "w27830097", {"front": "e"}),
+        ("tsum", "w30601064", {"front": "e"}),
+        ("kmda", "w27830597", {"front": "e"}),
+    ],
 }
 
 ROAD_W = {"primary": 14, "secondary": 12, "tertiary": 10, "residential": 8, "unclassified": 7, "living_street": 7,
@@ -42,8 +95,9 @@ COLOURS = {"white": "#efece4", "grey": "#8d8f91", "gray": "#8d8f91", "red": "#a2
            "copper": "#6f9c8a", "teal": "#4b8680", "cream": "#e8dcc0", "ivory": "#ece6d2", "terracotta": "#b05a3c"}
 
 
-def overpass_query(b):
+def overpass_query(b, refs):
     box = f"{b[0]},{b[1]},{b[2]},{b[3]}"
+    extra = "".join(f'{ {"w": "way", "r": "relation", "n": "node"}[r[0]] }(id:{r[1:]});' for r in refs)
     def both(selector):
         return f'way{selector}({box});relation{selector}["type"="multipolygon"]({box});'
     return (
@@ -56,19 +110,30 @@ def overpass_query(b):
         + both('["amenity"~"^(parking|grave_yard)$"]')
         + both('["place"="square"]')
         + f'way["waterway"="riverbank"]({box});way["natural"="tree_row"]({box});node["natural"="tree"]({box});'
-        + ");out geom;"
+        + extra + ");out geom;"
     )
 
 
 def fetch(key, cfg, cache):
-    path = os.path.join(cache, key + ".json")
+    path = os.path.join(cache, key + ".v2.json")
     if not os.path.exists(path):
         os.makedirs(cache, exist_ok=True)
-        body = urllib.parse.urlencode({"data": overpass_query(cfg["bbox"])}).encode()
-        req = urllib.request.Request("https://overpass-api.de/api/interpreter", data=body,
-                                     headers={"User-Agent": "zombie-drive-level-builder/1.0"})
-        with urllib.request.urlopen(req, timeout=300) as r, open(path, "wb") as f:
-            f.write(r.read())
+        refs = [spec[1] for spec in LANDMARKS[key]]
+        body = urllib.parse.urlencode({"data": overpass_query(cfg["bbox"], refs)}).encode()
+        for attempt in range(8):
+            try:
+                req = urllib.request.Request("https://overpass-api.de/api/interpreter", data=body,
+                                             headers={"User-Agent": "zombie-drive-level-builder/1.0"})
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    data = r.read()
+                break
+            except urllib.error.URLError as ex:
+                print("overpass busy, retrying:", ex)
+                time.sleep(30)
+        else:
+            raise SystemExit("Overpass did not answer")
+        with open(path, "wb") as f:
+            f.write(data)
     with open(path) as f:
         return json.load(f)
 
@@ -249,6 +314,83 @@ def area_kind(t):
     return None
 
 
+def hull(points):
+    pts = sorted(set(points))
+    if len(pts) < 3:
+        return pts
+    def half(seq):
+        out = []
+        for p in seq:
+            while len(out) > 1 and (out[-1][0] - out[-2][0]) * (p[1] - out[-2][1]) - (out[-1][1] - out[-2][1]) * (p[0] - out[-2][0]) <= 0:
+                out.pop()
+            out.append(p)
+        return out[:-1]
+    return half(pts) + half(pts[::-1])
+
+
+def oriented_box(points):
+    """Smallest box round the points: centre, long side, short side, angle of the long side."""
+    h = hull(points)
+    best = None
+    for i in range(len(h)):
+        a = math.atan2(h[(i + 1) % len(h)][1] - h[i][1], h[(i + 1) % len(h)][0] - h[i][0])
+        ca, sa = math.cos(a), math.sin(a)
+        us = [p[0] * ca + p[1] * sa for p in h]
+        vs = [-p[0] * sa + p[1] * ca for p in h]
+        area = (max(us) - min(us)) * (max(vs) - min(vs))
+        if best is None or area < best[0]:
+            best = (area, a, (min(us) + max(us)) / 2, (min(vs) + max(vs)) / 2, max(us) - min(us), max(vs) - min(vs))
+    _, a, u, v, w, d = best
+    x, y = u * math.cos(a) - v * math.sin(a), u * math.sin(a) + v * math.cos(a)
+    if d > w:
+        a, w, d = a + math.pi / 2, d, w
+    return x, y, w, d, a
+
+
+def outline_of(e, loc):
+    if e["type"] == "node":
+        return [loc(e["lat"], e["lon"])]
+    polys = polygons_of(e, loc)
+    if polys:
+        return dedupe(max(polys, key=lambda p: abs(signed_area(p[0])))[0])
+    return [loc(p["lat"], p["lon"]) for p in e.get("geometry", [])]
+
+
+def resolve_landmarks(key, cfg, raw, buildings, loc):
+    index = {e["type"][0] + str(e["id"]): e for e in raw["elements"]}
+    out = []
+    raised = {}
+    for kit, ref, opts in LANDMARKS[key]:
+        if ref not in index:
+            print("  missing in OSM:", kit, ref)
+            continue
+        ring = outline_of(index[ref], loc)
+        x, y, w, d, a = oriented_box(ring) if len(ring) > 2 else (*ring[0], 4, 4, 0)
+        tags = index[ref].get("tags", {})
+        m = {"kit": kit, "x": round(x, 1), "y": round(y, 1), "w": round(w, 1), "d": round(d, 1), "a": round(a, 4),
+             "h": number(tags.get("height"))}
+        for k in ("front", "on", "hill", "solid"):
+            if k in opts:
+                m[k] = opts[k]
+        if "hill" in opts:
+            m["ring"] = ring
+            raised[kit] = (ring, opts["hill"])
+        out.append(m)
+        for b in buildings:
+            hide = b.get("_id") == ref
+            if not hide and len(ring) > 2 and "hill" not in opts:
+                hide = inside(centroid(b["p"]), ring)
+            if hide:
+                b["lm"] = 1
+    for ring, height in raised.values():
+        for b in buildings:
+            if inside(centroid(b["p"]), ring):
+                b["up"] = height
+    for b in buildings:
+        b.pop("_id", None)
+    return out
+
+
 def convert(key, cfg, raw):
     lat0, lon0 = cfg["center"]
     kx = 111320 * math.cos(math.radians(lat0))
@@ -271,12 +413,17 @@ def convert(key, cfg, raw):
         if "building" in t or "building:part" in t:
             if t.get("building") in ("no", "roof", "ruins") or t.get("building:part") == "no":
                 continue
+            # lattice masts are mapped as buildings, and would be drawn as solid spikes
+            if t.get("man_made") == "tower" and t.get("tower:type") == "communication":
+                continue
             for outer, holes in polygons_of(e, loc):
                 outer = dedupe(outer)
                 holes = [dedupe(h) for h in holes if len(dedupe(h)) >= 3]
                 c = centroid(outer)
                 if len(outer) >= 3 and x0 < c[0] < x1 and y0 < c[1] < y1:
-                    buildings.append(convert_building(e, t, outer, holes, cfg))
+                    b = convert_building(e, t, outer, holes, cfg)
+                    b["_id"] = e["type"][0] + str(e["id"])
+                    buildings.append(b)
             continue
         kind = area_kind(t)
         if kind:
@@ -340,16 +487,17 @@ def convert(key, cfg, raw):
                 # a tower of a church is still a church, whatever the part itself is tagged
                 if p["k"] == "r":
                     p["k"] = b["k"]
-                for key in ("c", "rc", "br"):
-                    if key in b and key not in p:
-                        p[key] = b[key]
+                for tag in ("c", "rc", "br"):
+                    if tag in b and tag not in p:
+                        p[tag] = b[tag]
         if area > 0 and covered / area > 0.5:
             b["np"] = 1
     for b in parts:
         del b["part"]
 
+    landmarks = resolve_landmarks(key, cfg, raw, buildings, loc)
     return dict(name=cfg["name"], start=loc(*cfg["start"]), finish=loc(*cfg["finish"]),
-                bounds=[round(x0), round(y0), round(x1), round(y1)],
+                bounds=[round(x0), round(y0), round(x1), round(y1)], landmarks=landmarks,
                 buildings=buildings, roads=roads, areas=areas, trees=trees, treeRows=rows)
 
 
@@ -368,7 +516,7 @@ def main():
         for a in level["areas"]:
             kinds[a["k"]] = kinds.get(a["k"], 0) + 1
         print(key, len(level["buildings"]), "buildings,", sum(1 for b in level["buildings"] if b.get("np")), "drawn as parts,",
-              len(level["roads"]), "roads,", kinds, len(level["trees"]), "trees,", len(level["treeRows"]), "rows,",
+              len(level["roads"]), "roads,", len(level["landmarks"]), "landmarks,", kinds, len(level["trees"]), "trees,", len(level["treeRows"]), "rows,",
               os.path.getsize(path) // 1024, "KB")
 
 

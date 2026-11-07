@@ -124,7 +124,7 @@ function addWalls(chunk, ring, h0, h1, color, seed, style, floorH, bayW) {
 }
 
 /** Inset a counter-clockwise ring. Returns null when the offset would turn the ring inside out. */
-function inset(ring, d) {
+export function inset(ring, d) {
   const n = ring.length;
   const out = [];
   for (let i = 0; i < n; i++) {
@@ -254,7 +254,7 @@ export function buildBuildings(data, level, wallMat, roofMat) {
   const copper = new THREE.Color('#6f9c8a');
 
   for (const b of data.buildings) {
-    if (b.np || b.p.length < 3) continue;
+    if (b.np || b.lm || b.p.length < 3) continue;
     let ring = b.p;
     if (ringArea(ring) < 0) ring = ring.slice().reverse();
     const holes = (b.ho || []).map((h) => (ringArea(h) > 0 ? h.slice().reverse() : h));
@@ -266,7 +266,10 @@ export function buildBuildings(data, level, wallMat, roofMat) {
     const chunk = chunks.get(key);
 
     const seed = hash(cx, cy);
-    const h0 = b.mh || 0;
+    // on a raised site, such as Wawel hill, tall tags already count from the ground below
+    const up = b.up || 0;
+    const h0 = (b.mh || 0) + up;
+    const top = up ? up + Math.min(b.h, 20) : b.h;
     const narrow = (2 * area) / perimeter(ring);
     const rs = b.rs;
     const church = b.k === 'c';
@@ -284,8 +287,8 @@ export function buildBuildings(data, level, wallMat, roofMat) {
       else if (shape === 'pyramidal' || shape === 'cone') roofH = Math.min(narrow * (church ? 3 : 1.4), b.h * 0.5);
       else roofH = Math.min(narrow * 0.85, 6.5);
     }
-    roofH = Math.min(roofH, (b.h - h0) * 0.7);
-    const wallTop = b.h - roofH;
+    roofH = Math.min(roofH, (top - h0) * 0.7);
+    const wallTop = top - roofH;
 
     const color = b.c ? new THREE.Color(b.c).lerp(MUTE, 0.35) : walls[Math.floor(seed * 97) % walls.length];
     const roofColor = b.rc ? new THREE.Color(b.rc) : church ? copper : roofs[Math.floor(seed * 89) % roofs.length];
