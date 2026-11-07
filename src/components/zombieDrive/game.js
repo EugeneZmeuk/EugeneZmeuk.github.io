@@ -3,6 +3,7 @@ import {BEST_KEY, CAR_STAGES, LEVELS, THROWABLES, WEAPONS, ZOMBIES} from './conf
 import {bakeGeometry, bakedMaterial, loadAll, loadJson, prepareScene} from './assets';
 import {City} from './city';
 import {GameAudio} from './audio';
+import {Diagnostics} from './diagnostics';
 
 const ZOMBIE_KINDS = Object.keys(ZOMBIES);
 const TURRET_PARTS = ['mg', 'minigun', 'laser', 'crossbar', 'shield', 'capacitor', 'cap_light', 'cradle', 'pintle'];
@@ -103,6 +104,7 @@ export class Game {
   constructor({container, base, onHud, onState, onSound}) {
     this.container = container;
     this.audio = new GameAudio();
+    this.diag = new Diagnostics();
     this.onSound = onSound;
     this.groanT = 1.5;
     this.base = base;
@@ -132,6 +134,8 @@ export class Game {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     el.appendChild(this.renderer.domElement);
+    this.diag.attach(this.renderer);
+    this.diag.onFatal = (message) => this.fail(message);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.5, 900);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
@@ -216,6 +220,7 @@ export class Game {
 
   dispose() {
     this.disposed = true;
+    this.diag.detach();
     this.audio.dispose();
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
@@ -231,7 +236,10 @@ export class Game {
   setState(s) {
     const prev = this.phase;
     this.phase = s.phase;
-    if (prev !== s.phase) this.onPhaseChange(prev, s.phase);
+    if (prev !== s.phase) {
+      this.diag.log('phase', {phase: s.phase, level: this.level && this.level.id, score: this.score});
+      this.onPhaseChange(prev, s.phase);
+    }
     this.onState && this.onState(s);
   }
 
@@ -272,12 +280,20 @@ export class Game {
     this.audio.ensure();
     this.levelIndex = index;
     const lvl = LEVELS[index];
+    this.diag.log('level', {level: lvl.id});
     this.level = lvl;
     if (!keepScore) this.score = 0;
     this.levelScore = this.score;
     this.kills = 0;
     this.setState({phase: 'loading', progress: 0.9, level: lvl});
-    const data = await loadJson(`${this.base}data/zombie-drive/${lvl.id}.json`);
+    let data;
+    try {
+      data = await loadJson(`${this.base}data/zombie-drive/${lvl.id}.json`);
+    } catch (e) {
+      this.diag.crash('level-load', e, {level: lvl.id});
+      this.fail(`Could not load ${lvl.title}. Check your connection and reload.`);
+      return;
+    }
     if (this.disposed) return;
     // clear previous level
     while (this.levelGroup.children.length) this.levelGroup.remove(this.levelGroup.children[0]);
@@ -406,24 +422,67 @@ export class Game {
     this.car.hp = Math.min(this.maxHp, this.maxHp * Math.max(hpFrac, 0.6));
     this.msg = {text: `UPGRADE: ${WEAPONS[this.stage].name} · ${CAR_STAGES[this.stage].name}`, t: 4};
     this.audio.upgrade();
+    this.diag.log('upgrade', {stage: this.stage, score: this.score});
     this.particles.burst(this.car.pos.clone().setY(1.5), new THREE.Color(0xffd27a), 80, 6, 4);
   }
 
   // ---------------------------------------------------------------- loop
   loop(t) {
-    if (this.disposed) return;
+    if (this.disposed || this.phase === 'crashed') return;
     this.raf = requestAnimationFrame((tt) => this.loop(tt));
-    const dt = Math.min(0.05, (t - this.lastTime) / 1000);
+    const ms = t - this.lastTime;
+    const dt = Math.min(0.05, ms / 1000);
     this.lastTime = t;
+    this.diag.frame(ms, this.phase === 'playing' && !this.paused);
     if (this.city && this.car) {
-      if (this.phase === 'playing') this.update(dt);
-      else this.idleCamera(dt);
-      this.particles.update(dt);
-      this.updateTracers(dt);
-      this.updateSun();
-      this.city.update(this.car.pos, t / 1000);
-      this.renderer.render(this.scene, this.camera);
+      // Without this catch an error here would leave a frozen picture and no explanation.
+      try {
+        if (this.phase !== 'playing') this.idleCamera(dt);
+        else if (!this.paused) this.update(dt);
+        this.particles.update(dt);
+        this.updateTracers(dt);
+        this.updateSun();
+        this.city.update(this.car.pos, t / 1000);
+        this.renderer.render(this.scene, this.camera);
+      } catch (e) {
+        this.diag.crash('loop', e, this.snapshot());
+        this.fail(e.message);
+      }
     }
+  }
+
+  /** State worth having in a report. */
+  snapshot() {
+    const c = this.car;
+    return {
+      level: this.level && this.level.id,
+      phase: this.phase,
+      stage: this.stage,
+      score: this.score,
+      kills: this.kills,
+      car: c ? {x: Math.round(c.pos.x), z: Math.round(c.pos.z), heading: +c.heading.toFixed(2), speed: +c.speed.toFixed(1), hp: Math.round(c.hp)} : null,
+      zombies: this.zombies ? this.zombies.length : 0,
+    };
+  }
+
+  /** Stop the game and tell the player, instead of carrying on broken. */
+  fail(message) {
+    this.diag.save();
+    try {
+      this.audio.setPlaying(false);
+      this.audio.stopMusic();
+    } catch (e) {
+      /* audio is the least of our problems here */
+    }
+    this.setState({phase: 'crashed', error: message});
+  }
+
+  setPaused(on) {
+    if (this.phase !== 'playing') return;
+    this.paused = on;
+    this.keys = {};
+    this.mouseDown = false;
+    this.audio.setPlaying(!on);
   }
 
   idleCamera(dt) {
@@ -511,6 +570,13 @@ export class Game {
     }
     const moved = Math.hypot(car.pos.x - was.x, car.pos.z - was.z);
     car.pinned = throttle && moved < 0.2 * dt ? (car.pinned || 0) + dt : 0;
+    if (car.pinned > 4 && !car.reported) {
+      car.reported = true;
+      this.diag.log('stuck', {...this.snapshot().car, level: this.level.id, overlap: this.carOverlap(car.pos.x, car.pos.z, car.heading)});
+      this.diag.save();
+    } else if (!car.pinned) {
+      car.reported = false;
+    }
     if (car.pinned > 1.2 && this.isWedged()) this.unstick();
     if (throttle) this.watchForPocket(dt);
     car.wheelRot += (car.speed * dt) / 0.4;
@@ -580,7 +646,10 @@ export class Game {
     a.t += dt;
     if (a.t > 5) {
       car.anchor = null;
-      if (!this.canDriveOut()) this.unstick(3);
+      if (!this.canDriveOut()) {
+        this.diag.log('trapped', {...this.snapshot().car, level: this.level.id});
+        this.unstick(3);
+      }
     }
   }
 
@@ -615,6 +684,7 @@ export class Game {
   /** Move a stuck car to the nearest clear spot at least `from` metres off, keeping its heading if possible. */
   unstick(from = 0.5) {
     const car = this.car;
+    this.diag.log('unstick', {...this.snapshot().car, level: this.level.id, from});
     for (let r = from; r <= 18; r += 0.5) {
       for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
         const x = car.pos.x + Math.cos(a) * r;

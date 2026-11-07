@@ -67,6 +67,25 @@
   cursor: pointer;
 }
 
+.reportBtn {
+  composes: soundBtn;
+  right: 3.8rem;
+}
+
+.reportText {
+  display: block;
+  width: 100%;
+  height: 8.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #15171c;
+  color: #cfd2d6;
+  font: 11px/1.3 monospace;
+  resize: none;
+}
+
 .hud {
   position: absolute;
   left: 0;

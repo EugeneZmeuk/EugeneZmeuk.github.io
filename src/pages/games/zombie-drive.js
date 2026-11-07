@@ -10,6 +10,7 @@ const CONTROLS = [
   ['Left button or Space', 'fire'],
   ['Shift', 'handbrake'],
   ['M', 'sound on / off'],
+  ['B', 'problem report'],
 ];
 
 export default function ZombieDrive() {
@@ -19,6 +20,8 @@ export default function ZombieDrive() {
   const [hud, setHud] = useState(null);
   const [state, setState] = useState({phase: 'loading', progress: 0});
   const [soundOn, setSoundOn] = useState(true);
+  const [report, setReport] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,7 +33,7 @@ export default function ZombieDrive() {
       setSoundOn(game.audio.enabled);
       if (process.env.NODE_ENV !== 'production') window.__zombieDrive = game;
       game.init().catch((err) => {
-        console.error(err);
+        game.diag.crash('init', err);
         setState({phase: 'error', error: String(err)});
       });
     });
@@ -40,8 +43,38 @@ export default function ZombieDrive() {
     };
   }, [base]);
 
+  const openReport = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    game.setPaused(true);
+    setCopied(false);
+    setReport({text: game.diag.reportText(), problems: game.diag.problems()});
+  };
+
+  const closeReport = () => {
+    setReport(null);
+    if (gameRef.current) gameRef.current.setPaused(false);
+  };
+
+  const copyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(report.text);
+    } catch (e) {
+      const area = document.getElementById('zd-report');
+      area.select();
+      document.execCommand('copy');
+    }
+    setCopied(true);
+  };
+
   useEffect(() => {
     const onKey = (e) => {
+      if (e.code === 'KeyB' && !e.repeat) {
+        if (report) closeReport();
+        else openReport();
+        return;
+      }
+      if (report) return;
       if (e.code !== 'Enter' && e.code !== 'Space') return;
       const g = gameRef.current;
       if (!g) return;
@@ -51,7 +84,7 @@ export default function ZombieDrive() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [state]);
+  }, [state, report]);
 
   const g = () => gameRef.current;
   const phase = state.phase;
@@ -80,6 +113,17 @@ export default function ZombieDrive() {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => g() && g().toggleSound()}>
             {soundOn ? '🔊' : '🔇'}
+          </button>
+
+          <button
+            type="button"
+            tabIndex={-1}
+            className={styles.reportBtn}
+            aria-label="Problem report"
+            title="Problem report (B)"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={openReport}>
+            🐞
           </button>
 
           {hud && (phase === 'playing' || phase === 'intro' || phase === 'dead' || phase === 'levelComplete') && (
@@ -127,6 +171,51 @@ export default function ZombieDrive() {
                 <h2>Could not start</h2>
                 <p>{state.error}</p>
                 <p>The game needs WebGL and a desktop browser.</p>
+              </div>
+            </div>
+          )}
+
+          {phase === 'crashed' && !report && (
+            <div className={styles.overlay}>
+              <div className={styles.card}>
+                <h2>The game crashed</h2>
+                <p>{state.error}</p>
+                <p className={styles.small}>The details are saved in this browser. A report helps to fix it.</p>
+                <button type="button" className={styles.button} onClick={openReport}>
+                  Open report
+                </button>
+                <button type="button" className={styles.buttonSecondary} onClick={() => window.location.reload()}>
+                  Reload
+                </button>
+              </div>
+            </div>
+          )}
+
+          {report && (
+            <div className={styles.overlay}>
+              <div className={styles.card}>
+                <h2>Problem report</h2>
+                <p className={styles.small}>
+                  {report.problems.sessions} sessions · crashes {report.problems.crashes} · errors {report.problems.errors} · stuck{' '}
+                  {report.problems.stuck} · freezes {report.problems.freezes}
+                </p>
+                <p className={styles.small}>
+                  This stays in your browser. Nothing is sent unless you choose to share it. It holds the game log, your browser and
+                  graphics card, but no personal data.
+                </p>
+                <textarea id="zd-report" className={styles.reportText} readOnly value={report.text} />
+                <button type="button" className={styles.button} onClick={copyReport}>
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+                <button type="button" className={styles.buttonSecondary} onClick={() => g().diag.download()}>
+                  Download
+                </button>
+                <a className={styles.buttonSecondary} href={g() ? g().diag.issueUrl() : '#'} target="_blank" rel="noreferrer">
+                  GitHub issue
+                </a>
+                <button type="button" className={styles.buttonSecondary} onClick={closeReport}>
+                  Close
+                </button>
               </div>
             </div>
           )}
