@@ -479,21 +479,26 @@ export class Game {
     if (this.key('brake')) car.speed *= Math.max(0, 1 - 3 * dt);
     car.speed -= car.speed * 0.45 * dt;
     car.speed = THREE.MathUtils.clamp(car.speed, -st.maxSpeed * 0.4, st.maxSpeed);
-    const turn = steer * st.turn * THREE.MathUtils.clamp(Math.abs(car.speed) / 8, 0, 1) * Math.sign(car.speed || 1);
-    car.heading += turn * dt;
+    // A little steering is kept at a crawl, otherwise a car pressed against a wall cannot turn away.
+    const grip = Math.max(Math.abs(car.speed) / 8, throttle ? 0.3 : 0);
+    const direction = Math.abs(car.speed) > 0.5 ? Math.sign(car.speed) : throttle;
+    const turned = car.heading + steer * st.turn * Math.min(grip, 1) * direction * dt;
+    if (this.canTake(car.pos.x, car.pos.z, turned)) car.heading = turned;
     const fx = -Math.sin(car.heading);
     const fz = -Math.cos(car.heading);
     const nx = car.pos.x + fx * car.speed * dt;
     const nz = car.pos.z + fz * car.speed * dt;
-    if (this.carFits(nx, nz, car.heading)) {
+    const scrape = Math.max(0, 1 - 4 * dt);
+    const was = {x: car.pos.x, z: car.pos.z};
+    if (this.canTake(nx, nz, car.heading)) {
       car.pos.x = nx;
       car.pos.z = nz;
-    } else if (this.carFits(nx, car.pos.z, car.heading)) {
+    } else if (this.canTake(nx, car.pos.z, car.heading)) {
       car.pos.x = nx;
-      car.speed *= 0.6;
-    } else if (this.carFits(car.pos.x, nz, car.heading)) {
+      car.speed *= scrape;
+    } else if (this.canTake(car.pos.x, nz, car.heading)) {
       car.pos.z = nz;
-      car.speed *= 0.6;
+      car.speed *= scrape;
     } else {
       const impact = Math.abs(car.speed);
       if (impact > 7) {
@@ -501,8 +506,13 @@ export class Game {
         car.hp -= (impact - 7) * 1.2;
         this.particles.burst(car.pos.clone().add(new THREE.Vector3(fx * 2.5, 0.8, fz * 2.5)), new THREE.Color(0xffc060), 20, 4, 2);
       }
-      car.speed *= -0.3;
+      // bounce off real hits only: a car leaning on a wall must stay free to pull away
+      car.speed = impact > 3 ? car.speed * -0.3 : 0;
     }
+    const moved = Math.hypot(car.pos.x - was.x, car.pos.z - was.z);
+    car.pinned = throttle && moved < 0.2 * dt ? (car.pinned || 0) + dt : 0;
+    if (car.pinned > 1.2 && this.isWedged()) this.unstick();
+    if (throttle) this.watchForPocket(dt);
     car.wheelRot += (car.speed * dt) / 0.4;
     for (const w of car.wheels) w.rotation.x = car.wheelRot;
     car.model.position.copy(car.pos);
@@ -512,11 +522,13 @@ export class Game {
     this.audio.updateCar(dt, {speed: car.speed, maxSpeed: st.maxSpeed, throttle, steer, idle: false});
   }
 
-  carFits(x, z, heading) {
+  /** How many points of the car's outline are inside something solid. */
+  carOverlap(x, z, heading) {
     const fx = -Math.sin(heading);
     const fz = -Math.cos(heading);
     const rx = Math.cos(heading);
     const rz = -Math.sin(heading);
+    let hits = 0;
     for (const [a, b] of [
       [2.4, 0.9],
       [2.4, -0.9],
@@ -525,9 +537,101 @@ export class Game {
       [0, 0.9],
       [0, -0.9],
     ]) {
-      if (this.city.blocked(x + fx * a + rx * b, z + fz * a + rz * b)) return false;
+      if (this.city.blocked(x + fx * a + rx * b, z + fz * a + rz * b)) hits += 1;
     }
-    return true;
+    return hits;
+  }
+
+  carFits(x, z, heading) {
+    return this.carOverlap(x, z, heading) === 0;
+  }
+
+  /** A move is fine if it is clear, or at least no worse when the car already overlaps something. */
+  canTake(x, z, heading) {
+    const next = this.carOverlap(x, z, heading);
+    if (next === 0) return true;
+    const now = this.carOverlap(this.car.pos.x, this.car.pos.z, this.car.heading);
+    return now > 0 && next <= now;
+  }
+
+  /** No way out by driving: neither forward, nor back, nor by turning. */
+  isWedged() {
+    const {pos, heading} = this.car;
+    if (!this.carFits(pos.x, pos.z, heading)) return true;
+    const fx = -Math.sin(heading);
+    const fz = -Math.cos(heading);
+    for (const d of [0.4, -0.4]) {
+      if (this.carFits(pos.x + fx * d, pos.z + fz * d, heading)) return false;
+    }
+    return !this.carFits(pos.x, pos.z, heading + 0.15) && !this.carFits(pos.x, pos.z, heading - 0.15);
+  }
+
+  /**
+   * Catches a car shut in a pocket, say between trunks. Trying hard and going nowhere is not
+   * proof, since it may just be a tight corner, so ask canDriveOut before moving anything.
+   */
+  watchForPocket(dt) {
+    const car = this.car;
+    const a = car.anchor;
+    if (!a || Math.hypot(car.pos.x - a.x, car.pos.z - a.z) > 3) {
+      car.anchor = {x: car.pos.x, z: car.pos.z, t: 0};
+      return;
+    }
+    a.t += dt;
+    if (a.t > 5) {
+      car.anchor = null;
+      if (!this.canDriveOut()) this.unstick(3);
+    }
+  }
+
+  /** Search the moves the car can really make, and see if any sequence gets it clear. */
+  canDriveOut(reach = 9, limit = 5000) {
+    const {pos, heading} = this.car;
+    const STEP = 0.8;
+    const TURN = 0.26;
+    const key = (x, z, h) => `${Math.round(x / STEP)},${Math.round(z / STEP)},${Math.round(h / TURN)}`;
+    const seen = new Set([key(pos.x, pos.z, heading)]);
+    const queue = [[pos.x, pos.z, heading]];
+    for (let i = 0; i < queue.length && i < limit; i++) {
+      const [x, z, h] = queue[i];
+      if (Math.hypot(x - pos.x, z - pos.z) >= reach) return true;
+      for (const d of [STEP, -STEP]) {
+        for (const t of [0, TURN, -TURN]) {
+          const nh = h + t;
+          const nx = x - Math.sin(nh) * d;
+          const nz = z - Math.cos(nh) * d;
+          const k = key(nx, nz, nh);
+          if (!seen.has(k) && this.carFits(nx, nz, nh)) {
+            seen.add(k);
+            queue.push([nx, nz, nh]);
+          }
+        }
+      }
+    }
+    // running out of budget means the space is large, which is not a pocket
+    return queue.length >= limit;
+  }
+
+  /** Move a stuck car to the nearest clear spot at least `from` metres off, keeping its heading if possible. */
+  unstick(from = 0.5) {
+    const car = this.car;
+    for (let r = from; r <= 18; r += 0.5) {
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+        const x = car.pos.x + Math.cos(a) * r;
+        const z = car.pos.z + Math.sin(a) * r;
+        for (const h of [0, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+          if (this.carFits(x, z, car.heading + h) && (from < 1 || this.city.clear(x, z, 4))) {
+            car.pos.x = x;
+            car.pos.z = z;
+            car.heading += h;
+            car.speed = 0;
+            car.pinned = 0;
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   // ---------------------------------------------------------------- turret & weapons
