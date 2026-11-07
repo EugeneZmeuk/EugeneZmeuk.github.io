@@ -139,12 +139,13 @@ export class Game {
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
-    sc.left = sc.bottom = -70;
-    sc.right = sc.top = 70;
+    sc.left = sc.bottom = -95;
+    sc.right = sc.top = 95;
     sc.near = 1;
     sc.far = 400;
     this.sun.shadow.bias = -0.0008;
-    this.scene.add(this.hemi, this.sun, this.sun.target);
+    this.ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    this.scene.add(this.hemi, this.ambient, this.sun, this.sun.target);
     this.levelGroup = new THREE.Group();
     this.scene.add(this.levelGroup);
     this.particles = new Particles(this.scene);
@@ -280,6 +281,7 @@ export class Game {
     if (this.disposed) return;
     // clear previous level
     while (this.levelGroup.children.length) this.levelGroup.remove(this.levelGroup.children[0]);
+    if (this.city) this.city.dispose();
     this.zombies = [];
     this.projectiles = [];
     this.debris = [];
@@ -290,11 +292,12 @@ export class Game {
     this.levelGroup.add(this.city.group);
     this.city.placeLamps(this.lampGeo, this.bakedMat);
     // lighting
-    this.scene.background = new THREE.Color(lvl.sky);
+    this.setSky(lvl.sky);
     this.scene.fog = new THREE.Fog(lvl.fog[0], lvl.fog[1], lvl.fog[2]);
     this.hemi.color.set(lvl.hemi[0]);
     this.hemi.groundColor.set(lvl.hemi[1]);
     this.hemi.intensity = lvl.hemi[2];
+    this.ambient.intensity = lvl.ambient;
     this.sun.color.set(lvl.sun[0]);
     this.sun.intensity = lvl.sun[1];
     this.sunOffset = new THREE.Vector3(...lvl.sun[2]);
@@ -314,6 +317,27 @@ export class Game {
     this.msg = null;
     this.setState({phase: 'intro', level: lvl, index, best: this.best});
     this.pushHud(true);
+  }
+
+  /** Vertical gradient sky, wrapped round the scene so it stays put as the camera turns. */
+  setSky([top, bottom]) {
+    const c = document.createElement('canvas');
+    c.width = 4;
+    c.height = 256;
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 0, 256);
+    const hi = `#${new THREE.Color(top).getHexString()}`;
+    const lo = `#${new THREE.Color(bottom).getHexString()}`;
+    g.addColorStop(0, hi);
+    g.addColorStop(0.46, lo);
+    g.addColorStop(1, lo);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 4, 256);
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    if (this.scene.background && this.scene.background.isTexture) this.scene.background.dispose();
+    this.scene.background = tex;
   }
 
   play() {
@@ -359,11 +383,16 @@ export class Game {
         return s;
       };
       car.lights = [mk(-0.6), mk(0.6)];
+      car.fill = new THREE.PointLight(0xdfe6ff, 0, 22, 1.4);
+      car.fill.position.set(0, 4.5, 1);
     }
+    const night = this.level && this.level.night;
     for (const l of car.lights) {
       model.add(l, l.target);
-      l.intensity = this.level && this.level.night ? 120 : 0;
+      l.intensity = night ? 150 : 0;
     }
+    model.add(car.fill);
+    car.fill.intensity = night ? 34 : 0;
     this.scene.add(model);
     this.car = car;
     this.maxHp = CAR_STAGES[stage].hp;
@@ -392,6 +421,7 @@ export class Game {
       this.particles.update(dt);
       this.updateTracers(dt);
       this.updateSun();
+      this.city.update(this.car.pos, t / 1000);
       this.renderer.render(this.scene, this.camera);
     }
   }
