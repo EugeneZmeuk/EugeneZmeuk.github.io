@@ -51,6 +51,22 @@
   cursor: crosshair;
 }
 
+.soundBtn {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  z-index: 3;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .hud {
   position: absolute;
   left: 0;

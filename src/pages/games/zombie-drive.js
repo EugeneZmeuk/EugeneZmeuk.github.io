@@ -9,6 +9,7 @@ const CONTROLS = [
   ['Mouse', 'aim the turret'],
   ['Left button or Space', 'fire'],
   ['Shift', 'handbrake'],
+  ['M', 'sound on / off'],
 ];
 
 export default function ZombieDrive() {
@@ -17,15 +18,17 @@ export default function ZombieDrive() {
   const base = useBaseUrl('/');
   const [hud, setHud] = useState(null);
   const [state, setState] = useState({phase: 'loading', progress: 0});
+  const [soundOn, setSoundOn] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     let game = null;
     import('../../components/zombieDrive/game').then(({Game}) => {
       if (cancelled || !mountRef.current) return;
-      game = new Game({container: mountRef.current, base, onHud: setHud, onState: setState});
+      game = new Game({container: mountRef.current, base, onHud: setHud, onState: setState, onSound: setSoundOn});
       gameRef.current = game;
-      window.__zombieDrive = game;
+      setSoundOn(game.audio.enabled);
+      if (process.env.NODE_ENV !== 'production') window.__zombieDrive = game;
       game.init().catch((err) => {
         console.error(err);
         setState({phase: 'error', error: String(err)});
@@ -67,6 +70,17 @@ export default function ZombieDrive() {
 
         <div className={styles.frame}>
           <div ref={mountRef} className={styles.canvasHost} />
+
+          <button
+            type="button"
+            tabIndex={-1}
+            className={styles.soundBtn}
+            aria-label={soundOn ? 'Mute sound' : 'Turn sound on'}
+            title="Sound (M)"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => g() && g().toggleSound()}>
+            {soundOn ? '🔊' : '🔇'}
+          </button>
 
           {hud && (phase === 'playing' || phase === 'intro' || phase === 'dead' || phase === 'levelComplete') && (
             <div className={styles.hud}>

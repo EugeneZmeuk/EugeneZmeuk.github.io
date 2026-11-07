@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {BEST_KEY, CAR_STAGES, LEVELS, THROWABLES, WEAPONS, ZOMBIES} from './config';
 import {bakeGeometry, bakedMaterial, loadAll, loadJson, prepareScene} from './assets';
 import {City} from './city';
+import {GameAudio} from './audio';
 
 const ZOMBIE_KINDS = Object.keys(ZOMBIES);
 const TURRET_PARTS = ['mg', 'minigun', 'laser', 'crossbar', 'shield', 'capacitor', 'cap_light', 'cradle', 'pintle'];
@@ -99,8 +100,11 @@ class Particles {
 }
 
 export class Game {
-  constructor({container, base, onHud, onState}) {
+  constructor({container, base, onHud, onState, onSound}) {
     this.container = container;
+    this.audio = new GameAudio();
+    this.onSound = onSound;
+    this.groanT = 1.5;
     this.base = base;
     this.onHud = onHud;
     this.onState = onState;
@@ -178,6 +182,7 @@ export class Game {
   bindInput() {
     this.onKeyDown = (e) => {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (e.code === 'KeyM' && !e.repeat) this.toggleSound();
       this.keys[e.code] = true;
     };
     this.onKeyUp = (e) => {
@@ -202,8 +207,15 @@ export class Game {
     c.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  toggleSound() {
+    const on = this.audio.toggle();
+    this.onSound && this.onSound(on);
+    return on;
+  }
+
   dispose() {
     this.disposed = true;
+    this.audio.dispose();
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKeyDown);
@@ -216,8 +228,38 @@ export class Game {
   }
 
   setState(s) {
+    const prev = this.phase;
     this.phase = s.phase;
+    if (prev !== s.phase) this.onPhaseChange(prev, s.phase);
     this.onState && this.onState(s);
+  }
+
+  onPhaseChange(prev, phase) {
+    const a = this.audio;
+    a.setPlaying(phase === 'playing');
+    if (phase === 'playing') a.startMusic(this.levelIndex);
+    else if (prev === 'playing') a.stopMusic();
+    if (phase === 'dead') a.gameOver();
+    if (phase === 'levelComplete' || phase === 'won') a.levelComplete();
+  }
+
+  /** Stereo position of a world point relative to the car, -1 (left) to 1 (right). */
+  panOf(pos) {
+    const dx = pos.x - this.car.pos.x;
+    const dz = pos.z - this.car.pos.z;
+    const d = Math.hypot(dx, dz) || 1;
+    return ((dx * Math.cos(this.car.heading) - dz * Math.sin(this.car.heading)) / d) * 0.8;
+  }
+
+  updateGroans(dt) {
+    this.groanT -= dt;
+    if (this.groanT > 0) return;
+    this.groanT = rand(0.5, 1.6);
+    const near = this.zombies.filter((z) => !z.dead && z.pos.distanceTo(this.car.pos) < 45);
+    if (!near.length) return;
+    const z = near[Math.floor(Math.random() * near.length)];
+    const vol = Math.max(0.15, 1 - z.pos.distanceTo(this.car.pos) / 45);
+    this.audio.groan(this.panOf(z.pos), vol, z.kind);
   }
 
   key(name) {
@@ -226,6 +268,7 @@ export class Game {
 
   // ---------------------------------------------------------------- levels
   async startLevel(index, keepScore = true) {
+    this.audio.ensure();
     this.levelIndex = index;
     const lvl = LEVELS[index];
     this.level = lvl;
@@ -333,6 +376,7 @@ export class Game {
     this.setCarModel(this.stage, false);
     this.car.hp = Math.min(this.maxHp, this.maxHp * Math.max(hpFrac, 0.6));
     this.msg = {text: `UPGRADE: ${WEAPONS[this.stage].name} · ${CAR_STAGES[this.stage].name}`, t: 4};
+    this.audio.upgrade();
     this.particles.burst(this.car.pos.clone().setY(1.5), new THREE.Color(0xffd27a), 80, 6, 4);
   }
 
@@ -372,6 +416,7 @@ export class Game {
     this.updateCar(dt);
     this.updateTurret(dt);
     this.updateZombies(dt);
+    this.updateGroans(dt);
     this.updateProjectiles(dt);
     this.updateDebris(dt);
     this.spawn(dt);
@@ -422,6 +467,7 @@ export class Game {
     } else {
       const impact = Math.abs(car.speed);
       if (impact > 7) {
+        this.audio.crunch();
         car.hp -= (impact - 7) * 1.2;
         this.particles.burst(car.pos.clone().add(new THREE.Vector3(fx * 2.5, 0.8, fz * 2.5)), new THREE.Color(0xffc060), 20, 4, 2);
       }
@@ -433,6 +479,7 @@ export class Game {
     car.model.rotation.set(0, car.heading, 0);
     car.model.rotation.z = -steer * Math.min(1, Math.abs(car.speed) / 15) * 0.04;
     car.model.rotation.x = -throttle * 0.02;
+    this.audio.updateCar(dt, {speed: car.speed, maxSpeed: st.maxSpeed, throttle, steer, idle: false});
   }
 
   carFits(x, z, heading) {
@@ -479,6 +526,7 @@ export class Game {
     this.hideLasers();
     if (weapon.spinup) {
       this.weaponHeat = THREE.MathUtils.clamp(this.weaponHeat + (firing ? dt / weapon.spinup : -dt / weapon.spinup), 0, 1);
+      this.audio.minigunSpin(this.weaponHeat);
       const spin = this.weaponHeat * 40 * dt;
       car.pivot.traverse((o) => {
         if (o.name.startsWith('minigun')) o.rotation.z += spin;
@@ -496,6 +544,7 @@ export class Game {
 
   shoot(muzzle, weapon) {
     const car = this.car;
+    this.audio.shot(this.stage);
     const origin = new THREE.Vector3(...muzzle);
     car.pivot.localToWorld(origin);
     const dir = this.aimDir ? this.aimDir.clone() : new THREE.Vector3(-Math.sin(car.heading), 0, -Math.cos(car.heading));
@@ -546,6 +595,8 @@ export class Game {
   }
 
   updateLaser(dt, firing, weapon) {
+    this.audio.laser(firing);
+    this.audio.minigunSpin(0);
     if (!this.laserBeams) {
       const mk = () => {
         const core = new THREE.Mesh(
@@ -713,12 +764,16 @@ export class Game {
           // ramming
           const st = CAR_STAGES[this.stage];
           const dmg = speed * st.ram * (z.def.heavy ? 0.5 : 1);
+          this.audio.thud(z.def.heavy ? 1 : 0.6);
           this.damageZombie(z, dmg, new THREE.Vector3(-dx, 0, -dz).normalize());
           car.hp -= st.ramSelf * (z.def.heavy ? 3 : 1);
           car.speed *= z.def.heavy ? 0.3 : 0.88;
         } else {
           car.hp -= z.def.dmg * this.level.zombieDmg * dt * 0.5;
-          if (Math.random() < 4 * dt) this.particles.burst(car.pos.clone().setY(1.2), new THREE.Color(0xff5050), 3, 2, 1);
+          if (Math.random() < 4 * dt) {
+            this.particles.burst(car.pos.clone().setY(1.2), new THREE.Color(0xff5050), 3, 2, 1);
+            this.audio.hit();
+          }
         }
       }
       if (z.def.throws) {
@@ -736,11 +791,13 @@ export class Game {
 
   damageZombie(z, dmg, dir, quiet) {
     z.hp -= dmg;
+    if (!quiet) this.audio.hit();
     if (!quiet || Math.random() < 0.3) {
       this.particles.burst(z.pos.clone().setY(1.2), new THREE.Color(0x8a0a0a), quiet ? 2 : 6, 2.5, 1.5);
     }
     if (z.hp <= 0 && !z.dead) {
       z.dead = true;
+      this.audio.zombieDie(this.panOf(z.pos));
       z.fallDir = dir && dir.dot(new THREE.Vector3(-Math.sin(z.yaw), 0, -Math.cos(z.yaw))) < 0 ? 1 : -1;
       this.kills += 1;
       this.score += z.def.score;
@@ -771,6 +828,7 @@ export class Game {
     this.levelGroup.add(mesh);
     this.projectiles.push({mesh, vel, g, dmg: def.dmg, spin: new THREE.Vector3(rand(-3, 3), rand(-3, 3), rand(-3, 3)), t: 0});
     this.msg = this.msg || {text: 'INCOMING!', t: 1.2};
+    this.audio.whoosh();
   }
 
   updateProjectiles(dt) {
@@ -790,8 +848,10 @@ export class Game {
           const armour = 1 - this.stage * 0.18;
           car.hp -= p.dmg * this.level.zombieDmg * armour;
           car.speed *= 0.8;
+          this.audio.crunch();
           this.particles.burst(p.mesh.position.clone(), new THREE.Color(0xffc060), 20, 4, 2);
         } else {
+          this.audio.thud(Math.max(0.1, 0.6 - d / 60));
           this.particles.burst(p.mesh.position.clone(), new THREE.Color(0x9a9080), 10, 2, 1);
         }
         p.mesh.position.y = 0.25;
