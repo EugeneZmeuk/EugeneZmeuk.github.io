@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {buildBuildings} from './buildings';
 import {buildGround} from './ground';
-import {buildLandmarks} from './landmarks';
+import {buildLandmarks, landmarkPassages} from './landmarks';
 import {facadeMaterial, landmarkMaterial, roofMaterial} from './materials';
 import {buildTrees} from './trees';
 
@@ -39,7 +39,10 @@ export class City {
     for (const m of [...city.children, ...this.landmarks.children, ...trees.group.children]) {
       if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
       const sphere = m.boundingSphere || m.geometry.boundingSphere;
-      this.cullable.push({mesh: m, center: sphere.center.clone(), radius: sphere.radius});
+      // landmarks are placed by their transform, so their sphere is not in world space yet
+      m.updateMatrix();
+      const center = sphere.center.clone().applyMatrix4(m.matrix);
+      this.cullable.push({mesh: m, center, radius: sphere.radius});
     }
     this.start = this.freePointNear(data.start[0], data.start[1]);
     this.finish = this.freePointNear(data.finish[0], data.finish[1]);
@@ -137,6 +140,19 @@ export class City {
         ctx.beginPath();
         trace(m.ring);
         ctx.stroke();
+      }
+    }
+    // the arches and gates a street really runs through
+    ctx.strokeStyle = '#fff';
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#fff';
+    for (const {path, width, yard} of landmarkPassages(this.data)) {
+      stroke({p: path, w: width}, 0);
+      if (yard) {
+        const [a, b] = px(yard);
+        ctx.beginPath();
+        ctx.arc(a, b, yard[2] / CELL, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     const img = ctx.getImageData(0, 0, cols, rows).data;

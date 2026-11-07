@@ -52,25 +52,34 @@ function wawelCathedral(k, {w, d}) {
   k.win(-nw / 2, 11, 0, -1, 0, 3.4, 7, {arch: true});
 }
 
+// the street through the middle of the Cloth Hall, in the model's own frame
+const HALL_GAP = 7.6;
+const HALL_ARCH = 10;
+
 function sukiennice(k, {w, d}) {
   const bw = w * 0.92;
   const bd = d * 0.62;
-  k.box(0, 0, 0, bw, 12.5, bd, PLASTER, PAT.stone);
+  k.boxGap(0, 0, 0, bw, 12.5, bd, HALL_GAP, HALL_ARCH, PLASTER, PAT.stone);
   // ground-floor arcades on both long sides
   const n = 13;
+  const skip = (i) => Math.abs(i - (n - 1) / 2) < 1;
   for (const s of [1, -1]) {
-    k.box(0, 0, (s * (d - 1.2)) / 2, bw + 6, 8.2, 1.2, 0xeee5d0, PAT.stone);
-    k.box(0, 8.2, (s * (bd + (d - bd) / 2)) / 2, bw + 6, 1, (d - bd) / 2 + 1.2, 0xb05a3c, PAT.tiles);
-    k.winsX((s * d) / 2, s, -bw * 0.47, bw * 0.47, n, 0.4, 5, 7, {arch: true, color: 0x2f2a26, pat: PAT.plain, frame: 0xf4ecd8});
+    k.boxGap(0, 0, (s * (d - 1.2)) / 2, bw + 6, 8.2, 1.2, 12, 20, 0xeee5d0, PAT.stone);
+    k.boxGap(0, 8.2, (s * (bd + (d - bd) / 2)) / 2, bw + 6, 1, (d - bd) / 2 + 1.2, 12, 20, 0xb05a3c, PAT.tiles);
+    for (let i = 0; i < n; i++) {
+      if (skip(i)) continue;
+      const x = -bw * 0.47 + (bw * 0.94 * i) / (n - 1);
+      k.win(x, 0.4, (s * d) / 2, 0, s, 5, 7, {arch: true, color: 0x2f2a26, pat: PAT.plain, frame: 0xf4ecd8});
+    }
   }
   for (const s of [1, -1]) {
     k.box((s * (bw + 6)) / 2, 0, 0, 2, 8.2, d, 0xeee5d0, PAT.stone);
     k.win((s * (bw + 7)) / 2, 0.4, 0, s, 0, 7, 7.2, {arch: true, color: 0x2f2a26, pat: PAT.plain, frame: 0xf4ecd8});
   }
-  // tall middle passage
+  // tall middle passage, open from side to side
   for (const s of [1, -1]) {
-    k.box(0, 0, (s * d) / 2, 12, 12.5, 1.6, 0xe9dfc7, PAT.stone);
-    k.win(0, 0.4, (s * (d + 1.6)) / 2, 0, s, 7.6, 10, {arch: true, color: 0x2f2a26, pat: PAT.plain, frame: 0xf8f1df});
+    k.boxGap(0, 0, (s * d) / 2, 12, 12.5, 1.6, HALL_GAP, HALL_ARCH, 0xe9dfc7, PAT.stone);
+    k.at({z: (s * (d + 1.6)) / 2}, () => k.portal(0, 0, 0, 0, s, HALL_GAP, HALL_ARCH, 0xf8f1df, PAT.stone));
   }
   k.winsX(bd / 2, 1, -bw * 0.45, bw * 0.45, 22, 9.8, 1, 1.8, {});
   k.winsX(-bd / 2, -1, -bw * 0.45, bw * 0.45, 22, 9.8, 1, 1.8, {});
@@ -156,41 +165,60 @@ function townHallTower(k, {w, d}) {
   k.spire(0, 61.8, 0, 0.3, 3, 0xe0b04a, PAT.gold, 6);
 }
 
+// centre of the drum and the walkway through it, measured from the OSM footpath
+const BARBAKAN = {x: 3.4, z: -1.3, door: Math.atan2(-13.7, -2.4), neck: Math.atan2(11.9, -18.5)};
+const BARBAKAN_DOOR = 7;
+
 function barbakan(k) {
-  k.lathe(0, 0, 0, [[12.5, 0], [11.5, 9], [11.5, 13], [11, 13], [0, 13]], BRICK, PAT.brick, 22);
-  k.lathe(0, 9, 0, [[11.9, 0], [11.9, 0.7], [0, 0.7]], STONE, PAT.stone, 22);
-  // loopholes round the drum
-  k.around(14, () => k.win(11.7, 5, 0, 1, 0, 0.7, 2.4, {color: 0x1b1714, pat: PAT.plain}));
-  k.around(22, () => k.box(11.3, 13, 0, 1, 1.4, 2, BRICK_DARK, PAT.brick));
-  k.around(7, () => {
-    k.cyl(11, 11, 0, 2.2, 7, BRICK, PAT.brick, 8);
-    k.around(1, () => k.spire(11, 18, 0, 2.7, 6, TILE, PAT.tiles, 8));
-    k.spire(11, 24, 0, 0.14, 1.6, 0xe0b04a, PAT.gold, 5);
+  const {x, z, door, neck} = BARBAKAN;
+  // hollow like the real one: a thick round wall with a courtyard inside
+  k.ring(x, 0, z, 9, 12.5, BARBAKAN_DOOR, BRICK, PAT.brick, [door, neck], 0.3);
+  k.ring(x, BARBAKAN_DOOR, z, 9, 12.5, 6, BRICK, PAT.brick, [], 0.24, 28, true);
+  k.ring(x, 9, z, 12.5, 12.9, 0.7, STONE, PAT.stone);
+  k.at({x, z}, () => {
+    // loopholes round the drum
+    k.around(14, () => k.win(12.5, 8, 0, 1, 0, 0.7, 2.4, {color: 0x1b1714, pat: PAT.plain}));
+    k.around(22, () => k.box(12, 13, 0, 1, 1.4, 2, BRICK_DARK, PAT.brick));
+    k.around(7, () => {
+      k.cyl(11.4, 11, 0, 2.2, 7, BRICK, PAT.brick, 8);
+      k.spire(11.4, 18, 0, 2.7, 6, TILE, PAT.tiles, 8);
+      k.spire(11.4, 24, 0, 0.14, 1.6, 0xe0b04a, PAT.gold, 5);
+    });
+    // walled neck towards the Florian Gate
+    k.at({ry: -neck}, () => {
+      k.box(16, 0, 3.6, 9, 8, 1.2, BRICK_DARK, PAT.brick);
+      k.box(16, 0, -3.6, 9, 8, 1.2, BRICK_DARK, PAT.brick);
+    });
   });
-  k.win(0, 0, 12.4, 0, 1, 5, 7, {arch: true, color: 0x1b1714, pat: PAT.plain, frame: STONE});
-  k.box(14, 0, 0, 10, 11, 8, BRICK_DARK, PAT.brick);
 }
+
+const GATE_ARCH = {width: 4.6, height: 6.8};
 
 function florianGate(k, {w, d}) {
   const s = Math.min(w, d);
-  k.box(0, 0, 0, s, 24, s, BRICK, PAT.brick);
-  k.box(0, 0, 0, s + 0.6, 12, s + 0.6, STONE, PAT.stone);
-  k.win(0, 0, s / 2 + 0.3, 0, 1, 4.4, 6.6, {arch: true, color: 0x14110f, pat: PAT.plain, frame: 0xdfd5be});
-  k.win(0, 0, -s / 2 - 0.3, 0, -1, 4.4, 6.6, {arch: true, color: 0x14110f, pat: PAT.plain, frame: 0xdfd5be});
-  k.win(0, 8.4, s / 2 + 0.3, 0, 1, 1.6, 2.2, {color: 0xe6dcc2, pat: PAT.plain, frame: 0xb7a98c});
-  k.floors(0, 0, s, s, [15], 1, 1, 1.4, 4, {arch: true});
-  k.cornice(0, 24, 0, s, s, 0.7, 0.4, STONE, PAT.stone);
-  k.crenelsX(s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
-  k.crenelsX(-s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
-  k.crenelsZ(s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
-  k.crenelsZ(-s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
-  k.hip(0, 24.7, 0, s * 0.8, s * 0.8, 3.5, s * 0.46, s * 0.46, COPPER, PAT.metal);
-  k.helmet(0, 28.2, 0, s * 0.27, 7.4, COPPER);
-  // stubs of the old city wall on both sides
-  k.box(s / 2 + 4, 0, 0, 8, 9, 2, BRICK, PAT.brick);
-  k.box(-s / 2 - 4, 0, 0, 8, 9, 2, BRICK, PAT.brick);
-  k.crenelsX(0, -s / 2 - 8, -s / 2, 3, 9, 1.2, 2, BRICK);
-  k.crenelsX(0, s / 2, s / 2 + 8, 3, 9, 1.2, 2, BRICK);
+  const {width, height} = GATE_ARCH;
+  // drawn turned a quarter: the archway runs along z here, and x in the placed model
+  k.at({ry: Math.PI / 2}, () => {
+    k.boxGap(0, 0, 0, s, 24, s, width, height, BRICK, PAT.brick);
+    k.boxGap(0, 0, 0, s + 0.6, 12, s + 0.6, width, height, STONE, PAT.stone);
+    for (const f of [1, -1]) {
+      k.at({z: (f * (s + 0.6)) / 2}, () => k.portal(0, 0, 0, 0, f, width, height, 0xdfd5be, PAT.stone));
+    }
+    k.win(0, 8.4, s / 2 + 0.3, 0, 1, 1.6, 2.2, {color: 0xe6dcc2, pat: PAT.plain, frame: 0xb7a98c});
+    k.floors(0, 0, s, s, [15], 1, 1, 1.4, 4, {arch: true});
+    k.cornice(0, 24, 0, s, s, 0.7, 0.4, STONE, PAT.stone);
+    k.crenelsX(s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
+    k.crenelsX(-s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
+    k.crenelsZ(s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
+    k.crenelsZ(-s / 2, -s / 2, s / 2, 5, 24.7, 1.6, 0.8, BRICK);
+    k.hip(0, 24.7, 0, s * 0.8, s * 0.8, 3.5, s * 0.46, s * 0.46, COPPER, PAT.metal);
+    k.helmet(0, 28.2, 0, s * 0.27, 7.4, COPPER);
+    // stubs of the old city wall on both sides
+    k.box(s / 2 + 4, 0, 0, 8, 9, 2, BRICK, PAT.brick);
+    k.box(-s / 2 - 4, 0, 0, 8, 9, 2, BRICK, PAT.brick);
+    k.crenelsX(0, -s / 2 - 8, -s / 2, 3, 9, 1.2, 2, BRICK);
+    k.crenelsX(0, s / 2, s / 2 + 8, 3, 9, 1.2, 2, BRICK);
+  });
 }
 
 function slowackiTheatre(k, {w, d}) {
@@ -296,11 +324,11 @@ function mickiewicz(k) {
 
 export const KRAKOW = {
   wawel_cathedral: {build: wawelCathedral, faces: 'x-'},
-  sukiennice: {build: sukiennice},
+  sukiennice: {build: sukiennice, passage: {path: [[0, -24], [0, 24]], width: 6.6}},
   mariacki: {build: mariacki, faces: 'x-'},
   town_hall_tower: {build: townHallTower},
-  barbakan: {build: barbakan},
-  florian_gate: {build: florianGate, faces: 'z+'},
+  barbakan: {build: barbakan, passage: {path: [[0.5, -20], [BARBAKAN.x, BARBAKAN.z], [-18, 12.5]], width: 6, yard: [BARBAKAN.x, BARBAKAN.z, 8]}},
+  florian_gate: {build: florianGate, faces: 'x-', passage: {path: [[-9, 0], [9, 0]], width: 4}},
   slowacki_theatre: {build: slowackiTheatre, faces: 'x-'},
   peter_paul: {build: peterPaul, faces: 'x-'},
   st_andrew: {build: stAndrew, faces: 'x-'},

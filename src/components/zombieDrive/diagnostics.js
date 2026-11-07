@@ -41,7 +41,7 @@ export class Diagnostics {
     };
     this.t0 = performance.now();
     this.seen = new Set();
-    this.perf = {frames: 0, worst: 0, since: this.t0};
+    this.perf = null;
     this.onFatal = null;
   }
 
@@ -88,6 +88,7 @@ export class Diagnostics {
     };
     this.onVisible = () => {
       this.skipFrame = true;
+      this.perf = null;
       this.log('visibility', {hidden: document.hidden});
     };
     this.onContextLost = (ev) => {
@@ -128,14 +129,22 @@ export class Diagnostics {
       return;
     }
     if (ms > FREEZE_MS && !document.hidden) this.log('freeze', {ms: Math.round(ms)});
-    if (!playing) return;
+    // measure only full windows of real play: menus and pauses would read as a slowdown
+    if (!playing) {
+      this.perf = null;
+      return;
+    }
+    if (!this.perf) {
+      this.perf = {frames: 0, worst: 0, since: performance.now()};
+      return;
+    }
     const p = this.perf;
     p.frames += 1;
     p.worst = Math.max(p.worst, ms);
     const span = (performance.now() - p.since) / 1000;
     if (span >= PERF_EVERY_S) {
       this.log('perf', {fps: Math.round(p.frames / span), worstMs: Math.round(p.worst)});
-      this.perf = {frames: 0, worst: 0, since: performance.now()};
+      this.perf = null;
     }
   }
 

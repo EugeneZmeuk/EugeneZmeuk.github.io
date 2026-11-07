@@ -69,6 +69,51 @@ export class Kit {
     this.quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], color, pat);
   }
 
+  /** Box along x with a gap through it, closed above `top` by a lintel with a real ceiling. */
+  boxGap(x, y, z, w, h, d, gap, top, color, pat = PAT.plain) {
+    const side = (w - gap) / 2;
+    this.box(x - gap / 2 - side / 2, y, z, side, h, d, color, pat);
+    this.box(x + gap / 2 + side / 2, y, z, side, h, d, color, pat);
+    if (top >= y + h) return;
+    this.box(x, top, z, gap, y + h - top, d, color, pat);
+    const [x0, x1, z0, z1] = [x - gap / 2, x + gap / 2, z - d / 2, z + d / 2];
+    this.quad([x0, top, z0], [x1, top, z0], [x1, top, z1], [x0, top, z1], color, pat);
+  }
+
+  /** Corners that turn a square opening into an arch. (nx, nz) is the way the wall faces. */
+  portal(x, y, z, nx, nz, w, h, color, pat = PAT.plain) {
+    const [rx, rz] = [nz, -nx];
+    const r = w / 2;
+    const spring = h - r;
+    const P = (u, v) => [x + rx * u + nx * 0.05, y + v, z + rz * u + nz * 0.05];
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI;
+      const a1 = ((i + 1) / n) * Math.PI;
+      const [u0, v0] = [Math.cos(a0) * r, spring + Math.sin(a0) * r];
+      const [u1, v1] = [Math.cos(a1) * r, spring + Math.sin(a1) * r];
+      this.quad(P(u1, v1), P(u0, v0), P(u0, h), P(u1, h), color, pat);
+    }
+  }
+
+  /** Round wall with openings: gaps are angles, each opening is 2 * half radians wide. */
+  ring(x, y, z, r0, r1, h, color, pat, gaps = [], half = 0.24, seg = 28, ceiling = false) {
+    const open = (a) => gaps.some((g) => Math.abs(Math.atan2(Math.sin(a - g), Math.cos(a - g))) < half);
+    const P = (a, r, up) => [x + Math.cos(a) * r, y + up, z + Math.sin(a) * r];
+    for (let i = 0; i < seg; i++) {
+      const a0 = (i / seg) * Math.PI * 2;
+      const a1 = ((i + 1) / seg) * Math.PI * 2;
+      if (open((a0 + a1) / 2)) continue;
+      this.quad(P(a1, r1, 0), P(a0, r1, 0), P(a0, r1, h), P(a1, r1, h), color, pat);
+      this.quad(P(a0, r0, 0), P(a1, r0, 0), P(a1, r0, h), P(a0, r0, h), color, pat);
+      this.quad(P(a1, r0, h), P(a0, r0, h), P(a0, r1, h), P(a1, r1, h), color, pat);
+      if (ceiling) this.quad(P(a0, r0, 0), P(a0, r1, 0), P(a1, r1, 0), P(a1, r0, 0), color, pat);
+      // the cut ends of the wall beside an opening
+      if (open(a0 - 0.01)) this.quad(P(a0, r1, 0), P(a0, r0, 0), P(a0, r0, h), P(a0, r1, h), color, pat);
+      if (open(a1 + 0.01)) this.quad(P(a1, r0, 0), P(a1, r1, 0), P(a1, r1, h), P(a1, r0, h), color, pat);
+    }
+  }
+
   /** Truncated pyramid: w by d at the bottom, tw by td at the top. */
   hip(x, y, z, w, d, h, tw, td, color, pat = PAT.tiles) {
     const [x0, x1, z0, z1] = [x - w / 2, x + w / 2, z - d / 2, z + d / 2];

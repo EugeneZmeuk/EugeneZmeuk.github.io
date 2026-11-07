@@ -572,7 +572,12 @@ export class Game {
     car.pinned = throttle && moved < 0.2 * dt ? (car.pinned || 0) + dt : 0;
     if (car.pinned > 4 && !car.reported) {
       car.reported = true;
-      this.diag.log('stuck', {...this.snapshot().car, level: this.level.id, overlap: this.carOverlap(car.pos.x, car.pos.z, car.heading)});
+      this.diag.log('stuck', {
+        ...this.snapshot().car,
+        level: this.level.id,
+        overlap: this.carOverlap(car.pos.x, car.pos.z, car.heading),
+        canLeave: this.canDriveOut(),
+      });
       this.diag.save();
     } else if (!car.pinned) {
       car.reported = false;

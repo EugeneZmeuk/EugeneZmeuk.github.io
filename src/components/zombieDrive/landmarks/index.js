@@ -53,6 +53,21 @@ function buildHill(m, material) {
   return new THREE.Mesh(k.geometry(), material);
 }
 
+/** Ways through landmarks, as level-coordinate polylines, for the collision grid. */
+export function landmarkPassages(data) {
+  const out = [];
+  for (const m of data.landmarks || []) {
+    const spec = BUILDERS[m.kit];
+    if (!spec || !spec.passage) continue;
+    const a = heading(m, spec.faces);
+    const [c, s] = [Math.cos(a), Math.sin(a)];
+    const toLevel = ([lx, lz]) => [m.x + lx * c + lz * s, m.y + lx * s - lz * c];
+    const {path, width, yard} = spec.passage;
+    out.push({width, path: path.map(toLevel), yard: yard && [...toLevel(yard), yard[2]]});
+  }
+  return out;
+}
+
 export function buildLandmarks(data, material) {
   const group = new THREE.Group();
   for (const m of data.landmarks || []) {
